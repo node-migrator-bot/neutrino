@@ -140,7 +140,7 @@ Logger.prototype.write_ = function (level, message) {
             .replace('%h', now.getUTCHours()),
         logFolderPath = path.dirname(logFilePath),
 
-        toConsole = util.format('%s - %s: PID %d. %s',
+        toConsole = util.format('%s | %s\t| PID: %d - %s',
             nowUtc,
             level,
             process.pid,
