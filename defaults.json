@@ -1,11 +1,16 @@
 {
     "charset":"utf8",
 
+    "eventBus":{
+        "serverAddress":"localhost",
+        "serverPort":50777,
+        "reconnectInterval":5000
+    },
     "logger":{
         "levels":"debug+error+warn+trace",
-        "debug":"./logs/debug_%y-%m-%d.log",
-        "error":"./logs/error_%y-%m-%d.log",
-        "warn":"./logs/warn_%y-%m-%d.log",
-        "trace":"./logs/trace_%y-%m-%d.log"
+        "debug":"./logs/%pid_debug_%y-%m-%d.log",
+        "error":"./logs/%pid_error_%y-%m-%d.log",
+        "warn":"./logs/%pid_warn_%y-%m-%d.log",
+        "trace":"./logs/%pid_trace_%y-%m-%d.log"
     }
 }

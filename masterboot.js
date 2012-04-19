@@ -27,3 +27,11 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+
+(function () {
+
+    var configPath = process.argv.length > 2 ? process.argv[2] : undefined;
+    var neutrino = require('./index.js');
+    neutrino.isMaster = true;
+    neutrino.start(configPath);
+})();

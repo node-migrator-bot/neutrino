@@ -39,8 +39,7 @@
 module.exports = Logger;
 
 var util = require('util'),
-    path = require('path'),
-    neutrino = require('../index.js');
+    path = require('path');
 fs = require('fs');
 
 /**
@@ -134,6 +133,7 @@ Logger.prototype.write_ = function (level, message) {
         nowUtc = now.toUTCString(),
 
         logFilePath = self[level + 'Path_']
+            .replace('%pid', process.pid)
             .replace('%y', now.getUTCFullYear())
             .replace('%m', now.getUTCMonth() + 1)
             .replace('%d', now.getUTCDate())

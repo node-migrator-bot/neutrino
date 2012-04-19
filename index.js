@@ -27,10 +27,11 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-var neutrino = {};
+neutrino = {};
 module.exports = neutrino;
 
 neutrino.version = '0.0.1';
+neutrino.isMaster = false;
 neutrino.defaults = require('./defaults.json');
 
 neutrino.core = {};
@@ -38,7 +39,8 @@ neutrino.core.Config = require('./core/config.js');
 
 neutrino.cluster = {};
 neutrino.cluster.Balancer = require('./cluster/balancer.js');
-neutrino.cluster.EventBus = require('./cluster/eventbus.js');
+neutrino.cluster.EventBusServer = require('./cluster/eventbusserver.js');
+neutrino.cluster.EventBusClient = require('./cluster/eventbusclient.js');
 neutrino.cluster.Master = require('./cluster/master.js');
 neutrino.cluster.Worker = require('./cluster/worker.js');
 
@@ -62,5 +64,11 @@ neutrino.start = function (configPath) {
         neutrino.logger.error(error);
     });
 
-    // here cluster start call
+    if (neutrino.isMaster) {
+        var master = new neutrino.cluster.Master(neutrino.currentConfig);
+        master.start();
+    } else {
+        var worker = new neutrino.cluster.Worker(neutrino.currentConfig);
+        worker.start();
+    }
 };

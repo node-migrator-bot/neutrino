@@ -27,17 +27,10 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+
 (function () {
 
     var configPath = process.argv.length > 2 ? process.argv[2] : undefined;
     var neutrino = require('./index.js');
     neutrino.start(configPath);
-
-    setInterval(function () {
-        neutrino.logger.error(new Error('testerror'));
-        neutrino.logger.warn('test warning');
-        neutrino.logger.trace('test trace');
-        neutrino.logger.debug('test debug');
-    }, 1000)
-
 })();

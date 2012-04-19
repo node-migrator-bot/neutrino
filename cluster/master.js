@@ -27,3 +27,32 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+module.exports = Master;
+
+var util = require('util');
+
+function Master(config) {
+    var self = this;
+
+    self.eventBusServer = new neutrino.cluster.EventBusServer(config);
+
+    self.eventBusServer.on('serviceMessage', function (messageObject) {
+        neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
+    });
+
+    self.eventBusServer.on('masterMessage', function (messageObject, workerId) {
+        messageObject.helloFromMaster = 'world';
+        setTimeout(function () {
+            self.eventBusServer.sendToWorker(messageObject, workerId);
+        }, 1000);
+    });
+
+    setInterval(function () {
+        self.eventBusServer.sendToWorker({broadcast:'test'});
+    }, 5000);
+}
+Master.prototype.start = function () {
+    var self = this;
+    self.eventBusServer.start();
+};
+Master.prototype.eventBusServer = null;
