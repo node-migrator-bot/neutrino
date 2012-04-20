@@ -182,7 +182,7 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
 
     self.sockets_.push(socket);
 
-    self.workers_[workerId] = socket;
+    self.workers_[workerId] = {socket:socket, isAuthorized:false};
 
     self.emit('serviceMessage', {
         connection:util.format('%s->%s', socketAddress, self.serverAddressString_),
@@ -215,7 +215,7 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
         socket.destroy();
         throw e;
     }
-
+    self.workers_[workerId].isAuthorized = true;
     self.emit('serviceMessage', {
         connection:util.format('%s:%d->%s',
             socket.remoteAddress,
@@ -242,11 +242,11 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
 
     if (workerId) {
 
-        if (!(workerId in self.workers_)) {
+        if (!(workerId in self.workers_) || !self.workers_[workerId].isAuthorized) {
             return;
         }
 
-        var socket = self.workers_[workerId],
+        var socket = self.workers_[workerId].socket,
             socketAddress = socket.address();
         socket.write(message + '\r\n');
 
@@ -261,7 +261,12 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
 
     } else {
 
+        var currentWorkerId;
         self.sockets_.forEach(function (socket) {
+            currentWorkerId = self.generateWorkerId_(socket);
+            if (!self.workers_[currentWorkerId].isAuthorized) {
+                return;
+            }
             socket.write(message + '\r\n');
         });
         self.emit('serviceMessage', {
