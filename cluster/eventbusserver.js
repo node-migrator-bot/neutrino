@@ -47,6 +47,8 @@ function EventBusServer(config) {
 
     events.EventEmitter.call(self);
 
+    self.masterSecret_ = eventBusConfig.masterSecret || self.masterSecret_;
+    self.workerSecret_ = eventBusConfig.workerSecret || self.workerSecret_;
     self.serverPort_ = eventBusConfig.serverPort_ || self.serverPort_;
     self.charset_ = config.$('charset') || self.charset_;
 
@@ -58,6 +60,27 @@ function EventBusServer(config) {
         self.processMessageFromMaster_(messageObject, workerId);
     });
 }
+
+/**
+ * Secret token for master of event bus.
+ * @type {String}
+ * @private
+ */
+EventBusServer.prototype.masterSecret_ = neutrino.defaults.eventBus.masterSecret;
+
+/**
+ * Secret token for worker of event bus.
+ * @type {String}
+ * @private
+ */
+EventBusServer.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret;
+
+/**
+ * Secret token for event bus.
+ * @type {String}
+ * @private
+ */
+EventBusServer.prototype.secret_ = neutrino.defaults.eventBus.secret;
 
 /**
  * Port which EBS will listen.
@@ -180,8 +203,18 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
     }
 
     var self = this,
-        messageObject = JSON.parse(message),
+        messageObject,
         workerId = self.generateWorkerId_(socket);
+
+    try {
+        messageObject = JSON.parse(message);
+        if (!messageObject.secret || messageObject.secret !== self.workerSecret_) {
+            throw new Error('Wrong secret from ' + workerId);
+        }
+    } catch (e) {
+        socket.destroy();
+        throw e;
+    }
 
     self.emit('serviceMessage', {
         connection:util.format('%s:%d->%s',
@@ -201,8 +234,11 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
  */
 EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, workerId) {
 
-    var self = this,
-        message = JSON.stringify(messageObject);
+    var self = this;
+
+    messageObject.secret = self.masterSecret_;
+
+    var message = JSON.stringify(messageObject);
 
     if (workerId) {
 

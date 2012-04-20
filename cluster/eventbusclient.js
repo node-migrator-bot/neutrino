@@ -50,6 +50,8 @@ function EventBusClient(config) {
 
     self.charset_ = config.$('charset') || self.charset_;
 
+    self.masterSecret_ = eventBusConfig.masterSecret || self.masterSecret_;
+    self.workerSecret_ = eventBusConfig.workerSecret || self.workerSecret_;
     self.serverHost_ = eventBusConfig.serverAddress || self.serverHost_;
     self.serverPort_ = eventBusConfig.serverPort || self.serverPort_;
     self.serverAddressString_ = util.format('%s:%d',
@@ -58,6 +60,20 @@ function EventBusClient(config) {
 
     self.createSocket();
 }
+
+/**
+ * Secret token for master of event bus.
+ * @type {String}
+ * @private
+ */
+EventBusClient.prototype.masterSecret_ = neutrino.defaults.eventBus.masterSecret;
+
+/**
+ * Secret token for worker of event bus.
+ * @type {String}
+ * @private
+ */
+EventBusClient.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret;
 
 /**
  * Message queue for delayed sending.
@@ -225,7 +241,17 @@ EventBusClient.prototype.incomingMessageHandler_ = function (message) {
     }
 
     var self = this,
+        messageObject;
+
+    try {
         messageObject = JSON.parse(message);
+        if (!messageObject.secret || messageObject.secret !== self.masterSecret_) {
+            throw new Error('Wrong secret from master');
+        }
+    } catch (e) {
+        self.socket_.destroy();
+        throw e;
+    }
 
     self.emit('workerMessage', messageObject);
     self.emit('serviceMessage', {
@@ -247,7 +273,10 @@ EventBusClient.prototype.sendToMaster = function (messageObject) {
         return;
     }
 
+    messageObject.secret = self.workerSecret_;
+
     var message = JSON.stringify(messageObject);
+
     self.socket_.write(message + '\r\n');
 
     self.emit('serviceMessage', {

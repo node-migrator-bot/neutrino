@@ -4,7 +4,9 @@
     "eventBus":{
         "serverAddress":"localhost",
         "serverPort":50777,
-        "reconnectInterval":5000
+        "reconnectInterval":5000,
+        "masterSecret":"masterSecret",
+        "workerSecret":"workerSecret"
     },
     "logger":{
         "levels":"debug+error+warn+trace",
