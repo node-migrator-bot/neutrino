@@ -257,7 +257,7 @@ EventBusClient.prototype.incomingMessageHandler_ = function (message) {
     self.emit('workerMessage', messageObject);
     self.emit('serviceMessage', {
         connection:util.format('%s->%s', self.serverAddressString_, self.socketAddressString_),
-        message:'Master sent message'
+        message:util.format('Master sent message, type - %s', messageObject.type)
     });
 };
 
@@ -282,6 +282,6 @@ EventBusClient.prototype.sendToMaster = function (messageObject) {
 
     self.emit('serviceMessage', {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
-        message:'Worker sent message'
+        message:util.format('Worker sent message, type - %s', messageObject.type)
     });
 };

@@ -31,8 +31,19 @@ module.exports = Worker;
 
 var util = require('util');
 
+/**
+ * Create new instance of worker node.
+ * @param {neutrino.core.Config} config Neutrino config object.
+ * @constructor
+ */
 function Worker(config) {
-    var self = this;
+
+    var self = this,
+        workerConfig = config.$('worker') || {};
+
+    self.host_ = workerConfig.host || self.host_;
+    self.port_ = workerConfig.port_ || self.port_;
+    self.loadSendInterval_ = workerConfig.loadSendInterval || self.loadSendInterval_;
 
     self.eventBusClient_ = new neutrino.cluster.EventBusClient(config);
 
@@ -43,21 +54,79 @@ function Worker(config) {
     self.eventBusClient_.on('workerMessage', function (messageObject) {
         self.messageHandler_(messageObject);
     });
+
+    self.loadEstimationUpdateInterval_ = setInterval(function () {
+        self.loadEstimationUpdate_();
+    }, self.loadSendInterval_);
 }
 
+/**
+ * Load update sending interval handler.
+ * @type {Number}
+ */
+Worker.prototype.loadEstimationUpdateInterval_ = null;
+
+/**
+ * EBC instance.
+ * @type {neutrino.cluster.EventBusClient}
+ * @private
+ */
 Worker.prototype.eventBusClient_ = null;
 
+/**
+ * Interval for load estimation sending.
+ * @type {Number}
+ */
+Worker.prototype.loadSendInterval_ = neutrino.defaults.worker.loadSendInterval;
+
+/**
+ * Current worker node load estimation.
+ * @type {Number}
+ */
+Worker.prototype.loadEstimation_ = 0;
+
+/**
+ * Current worker node host name.
+ * @type {String}
+ * @private
+ */
+Worker.prototype.host_ = neutrino.defaults.worker.host;
+
+/**
+ * Current worker node port.
+ * @type {Number}
+ * @private
+ */
+Worker.prototype.port_ = neutrino.defaults.worker.port;
+
+Worker.prototype.loadEstimationUpdate_ = function () {
+
+    var self = this;
+
+    self.eventBusClient_.sendToMaster({
+        type:'load',
+        value:self.loadEstimation_
+    });
+};
+
+/**
+ * Start new worker node.
+ */
 Worker.prototype.start = function () {
     var self = this;
     self.eventBusClient_.connect();
 
     self.eventBusClient_.sendToMaster({
         type:'address',
-        value:'localhost:' + Math.random() * 1000
+        value:util.format('%s:%d', self.host_, self.port_)
     });
 
 };
 
+/**
+ * Handle all incoming messages.
+ * @param {Object} messageObject Incoming message object.
+ */
 Worker.prototype.messageHandler = function (messageObject) {
 
 };

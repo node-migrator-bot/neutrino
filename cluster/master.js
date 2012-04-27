@@ -39,16 +39,16 @@ var util = require('util'),
  */
 function Master(config) {
 
-    var self = this;
+    var self = this,
+        masterConfig = config.$('master') || {};
 
     self.eventBusServer_ = new neutrino.cluster.EventBusServer(config);
     self.balancer_ = new neutrino.cluster.Balancer();
-
     self.httpServer_ = http.createServer(function (request, response) {
         response.end(self.getFreeWorker());
     });
 
-    self.httpServerPort_ = config.$('masterHttpPort') || self.httpServerPort_;
+    self.httpServerPort_ = masterConfig.httpPort || self.httpServerPort_;
 
     self.workers_ = {};
 
@@ -104,7 +104,7 @@ Master.prototype.httpServer_ = null;
  * @type {Number}
  * @private
  */
-Master.prototype.httpServerPort_ = neutrino.defaults.masterHttpPort;
+Master.prototype.httpServerPort_ = neutrino.defaults.master.httpPort;
 
 /**
  * Start cluster master.

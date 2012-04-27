@@ -1,7 +1,15 @@
 {
     "charset":"utf8",
 
-    "masterHttpPort":8080,
+    "master":{
+        "httpPort":8080
+    },
+
+    "worker":{
+        "host":"localhost",
+        "port":"50888",
+        "loadSendInterval":60000
+    },
 
     "eventBus":{
         "serverAddress":"localhost",
@@ -10,6 +18,7 @@
         "masterSecret":"masterSecret",
         "workerSecret":"workerSecret"
     },
+
     "logger":{
         "levels":"debug+error+warn+trace",
         "debug":"./logs/%pid_debug_%y-%m-%d.log",

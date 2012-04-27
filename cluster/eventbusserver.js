@@ -217,7 +217,7 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
             socket.remoteAddress,
             socket.remotePort,
             self.serverAddressString_),
-        message:'Worker sent message'
+        message:util.format('Worker sent message, type - %s', messageObject.type)
     });
     self.emit('masterMessage', messageObject, workerId);
 };
@@ -252,7 +252,7 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
                 self.serverAddressString_,
                 socketAddress.address,
                 socketAddress.port),
-            message:util.format('Master sent message')
+            message:util.format('Master sent message, type - %s', messageObject.type)
         });
 
     } else {
@@ -267,7 +267,7 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
         });
         self.emit('serviceMessage', {
             connection:self.serverAddressString_,
-            message:util.format('Master sent broadcast message')
+            message:util.format('Master sent broadcast message, type - %s', messageObject.type)
         });
     }
 };
