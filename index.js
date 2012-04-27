@@ -54,7 +54,7 @@ neutrino.security.AuthProvider = require('./security/authprovider.js');
 neutrino.security.Logger = require('./security/logger.js');
 
 
-neutrino.start = function (configPath) {
+neutrino.start_ = function (configPath) {
 
     neutrino.currentConfig = new neutrino.core.Config(configPath);
 
@@ -71,4 +71,13 @@ neutrino.start = function (configPath) {
         var worker = new neutrino.cluster.Worker(neutrino.currentConfig);
         worker.start();
     }
+};
+
+neutrino.startMaster = function (configPath) {
+    neutrino.isMaster = true;
+    neutrino.start_(configPath);
+};
+
+neutrino.startWorker = function (configPath) {
+    neutrino.start_(configPath);
 };

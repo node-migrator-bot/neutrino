@@ -196,16 +196,16 @@ EventBusClient.prototype.connectionHandler_ = function () {
 
     self.isConnected_ = true;
 
+    self.emit('serviceMessage', {
+        connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
+        message:'Connection established'
+    });
+
     var messageToSend = self.messageQueue_;
     self.messageQueue_ = [];
 
     messageToSend.forEach(function (messageObject) {
         self.sendToMaster(messageObject);
-    });
-
-    self.emit('serviceMessage', {
-        connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
-        message:'Connection established'
     });
 };
 
