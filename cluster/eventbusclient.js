@@ -246,6 +246,7 @@ EventBusClient.prototype.incomingMessageHandler_ = function (message) {
     try {
         messageObject = JSON.parse(message);
         if (!messageObject.secret || messageObject.secret !== self.masterSecret_) {
+            //noinspection ExceptionCaughtLocallyJS
             throw new Error('Wrong secret from master');
         }
     } catch (e) {

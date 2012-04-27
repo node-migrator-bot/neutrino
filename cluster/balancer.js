@@ -27,3 +27,78 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+
+module.exports = Balancer;
+
+/**
+ * Create new instance of cluster balancer.
+ * @constructor
+ */
+function Balancer() {
+
+    var self = this;
+
+    self.workers_ = {};
+
+}
+
+/**
+ * Hashtable of cluster worker nodes.
+ * @type {Object}
+ * @private
+ */
+Balancer.prototype.workers_ = null;
+
+/**
+ * Add new worker node to balancer.
+ * @param {String} workerId Worker node ID.
+ */
+Balancer.prototype.addWorker = function (workerId) {
+    var self = this;
+    self.setWeight(workerId, 0);
+};
+
+/**
+ * Remove worker node from balancer.
+ * @param {String} workerId Worker node ID.
+ */
+Balancer.prototype.removeWorker = function (workerId) {
+    var self = this;
+    delete self.workers_[workerId];
+};
+
+/**
+ * Set load weight of worker node.
+ * @param {String} workerId Worker node ID.
+ * @param {Number} weight Load weight.
+ */
+Balancer.prototype.setWeight = function (workerId, weight) {
+    var self = this;
+    self.workers_[workerId] = weight;
+};
+
+/**
+ * Get most free worker node ID.
+ * @return {String}
+ */
+Balancer.prototype.getWorker = function () {
+    var self = this,
+        minKey,
+        minValue = Number.MAX_VALUE;
+
+    for (var key in self.workers_) {
+
+        if (!self.workers_.hasOwnProperty(key)) {
+            continue;
+        }
+
+        if (self.workers_[key] >= minValue) {
+            continue;
+        }
+        minKey = key;
+        minValue = self.workers_[key];
+    }
+
+    self.workers_[minKey]++;
+    return minKey;
+};

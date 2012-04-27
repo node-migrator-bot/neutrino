@@ -34,26 +34,30 @@ var util = require('util');
 function Worker(config) {
     var self = this;
 
-    self.eventBusClient = new neutrino.cluster.EventBusClient(config);
+    self.eventBusClient_ = new neutrino.cluster.EventBusClient(config);
 
-    self.eventBusClient.on('serviceMessage', function (messageObject) {
+    self.eventBusClient_.on('serviceMessage', function (messageObject) {
         neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
     });
 
-    self.eventBusClient.on('workerMessage', function (messageObject) {
-        messageObject.helloFromWorker = 'world';
-        self.eventBusClient.sendToMaster(messageObject);
+    self.eventBusClient_.on('workerMessage', function (messageObject) {
+        self.messageHandler_(messageObject);
     });
 }
 
+Worker.prototype.eventBusClient_ = null;
+
 Worker.prototype.start = function () {
     var self = this;
-    self.eventBusClient.connect();
+    self.eventBusClient_.connect();
 
-    self.eventBusClient.sendToMaster({
-        hello:'world'
+    self.eventBusClient_.sendToMaster({
+        type:'address',
+        value:'localhost:' + Math.random() * 1000
     });
 
 };
 
-Worker.prototype.eventBusClient = null;
+Worker.prototype.messageHandler = function (messageObject) {
+
+};

@@ -29,30 +29,162 @@
  */
 module.exports = Master;
 
-var util = require('util');
+var util = require('util'),
+    http = require('http');
 
+/**
+ * Create new instance of cluster master.
+ * @param {neutrino.core.Config} config Neutrino config object.
+ * @constructor
+ */
 function Master(config) {
+
     var self = this;
 
-    self.eventBusServer = new neutrino.cluster.EventBusServer(config);
+    self.eventBusServer_ = new neutrino.cluster.EventBusServer(config);
+    self.balancer_ = new neutrino.cluster.Balancer();
 
-    self.eventBusServer.on('serviceMessage', function (messageObject) {
+    self.httpServer_ = http.createServer(function (request, response) {
+        response.end(self.getFreeWorker());
+    });
+
+    self.httpServerPort_ = config.$('masterHttpPort') || self.httpServerPort_;
+
+    self.workers_ = {};
+
+    self.eventBusServer_.on('serviceMessage', function (messageObject) {
         neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
     });
 
-    self.eventBusServer.on('masterMessage', function (messageObject, workerId) {
-        messageObject.helloFromMaster = 'world';
-        setTimeout(function () {
-            self.eventBusServer.sendToWorker(messageObject, workerId);
-        }, 1000);
+    self.eventBusServer_.on('masterMessage', function (messageObject, workerId) {
+        self.messageHandler_(messageObject, workerId);
     });
 
-    setInterval(function () {
-        self.eventBusServer.sendToWorker({broadcast:'test'});
-    }, 5000);
+    self.eventBusServer_.on('workerConnected', function (workerId) {
+        self.balancer_.addWorker(workerId);
+        self.workers_[workerId] = '';
+    });
+
+    self.eventBusServer_.on('workerDisconnected', function (workerId) {
+        self.balancer_.removeWorker(workerId);
+        delete self.workers_[workerId];
+    });
 }
+
+/**
+ * EBS server for cluster communication.
+ * @type {neutrino.cluster.EventBusServer}
+ * @private
+ */
+Master.prototype.eventBusServer_ = null;
+
+/**
+ * Cluster balancer.
+ * @type {neutrino.cluster.Balancer}
+ * @private
+ */
+Master.prototype.balancer_ = null;
+
+/**
+ * Current worker nodes collection.
+ * @type {Object}
+ * @private
+ */
+Master.prototype.workers_ = null;
+
+/**
+ * HTTP server for client application asking for free node.
+ * @type {http.Server}
+ * @private
+ */
+Master.prototype.httpServer_ = null;
+
+/**
+ * Port of master HTTP server.
+ * @type {Number}
+ * @private
+ */
+Master.prototype.httpServerPort_ = neutrino.defaults.masterHttpPort;
+
+/**
+ * Start cluster master.
+ */
 Master.prototype.start = function () {
+
     var self = this;
-    self.eventBusServer.start();
+    self.eventBusServer_.start();
+    self.httpServer_.listen(self.httpServerPort_);
 };
-Master.prototype.eventBusServer = null;
+
+/**
+ * Get address of free worker node.
+ * @return {String}
+ */
+Master.prototype.getFreeWorker = function () {
+
+    var self = this,
+        freeWorkerId = self.balancer_.getWorker();
+
+    return self.workers_[freeWorkerId];
+};
+
+/**
+ * Handle all cluster messages.
+ * @param {Object} messageObject Incoming message object.
+ * @param {String} workerId Message sender ID.
+ * @private
+ */
+Master.prototype.messageHandler_ = function (messageObject, workerId) {
+
+    if (!messageObject.type) {
+        return;
+    }
+
+    var self = this,
+        handlerName = util.format('%sHandler_', messageObject.type);
+
+    if (!(handlerName in self)) {
+        return;
+    }
+
+    self[handlerName](messageObject, workerId);
+};
+
+/**
+ * Handle worker address message.
+ * @param {Object} messageObject Incoming message object.
+ * @param {String} workerId Message sender ID.
+ * @private
+ */
+Master.prototype.addressHandler_ = function (messageObject, workerId) {
+
+    var self = this;
+    self.workers_[workerId] = messageObject.value;
+
+};
+
+/**
+ * Handle workers sync message.
+ * @param {Object} messageObject Incoming message object.
+ * @param {String} workerId Message sender ID.
+ * @private
+ */
+Master.prototype.syncHandler_ = function (messageObject, workerId) {
+
+    var self = this;
+    self.eventBusServer_.sendToWorker(messageObject);
+
+};
+
+/**
+ * Handle worker load message. Worker sends its load estimation.
+ * @param {Object} messageObject Incoming message object.
+ * @param {String} workerId Message sender ID.
+ * @private
+ */
+Master.prototype.loadHandler_ = function (messageObject, workerId) {
+
+    var self = this;
+    self.balancer_.setWeight(workerId, messageObject.value);
+
+};

@@ -76,13 +76,6 @@ EventBusServer.prototype.masterSecret_ = neutrino.defaults.eventBus.masterSecret
 EventBusServer.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret;
 
 /**
- * Secret token for event bus.
- * @type {String}
- * @private
- */
-EventBusServer.prototype.secret_ = neutrino.defaults.eventBus.secret;
-
-/**
  * Port which EBS will listen.
  * @type {number}
  * @private
@@ -171,6 +164,7 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
             connection:util.format('%s->%s', socketAddress, self.serverAddressString_),
             message:'Worker disconnected'
         });
+        self.emit('workerDisconnected', workerId);
     });
 
     socket.on('data', function (data) {
@@ -188,6 +182,7 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
         connection:util.format('%s->%s', socketAddress, self.serverAddressString_),
         message:'Worker connected'
     });
+    self.emit('workerConnected', workerId);
 };
 
 /**
@@ -209,6 +204,7 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
     try {
         messageObject = JSON.parse(message);
         if (!messageObject.secret || messageObject.secret !== self.workerSecret_) {
+            //noinspection ExceptionCaughtLocallyJS
             throw new Error('Wrong secret from ' + workerId);
         }
     } catch (e) {
