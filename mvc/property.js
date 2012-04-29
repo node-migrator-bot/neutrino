@@ -27,42 +27,74 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-module.exports = ModelBase;
+
+module.exports = Property;
 
 var util = require('util'),
     events = require('events');
 
-util.inherits(ModelBase, events.EventEmitter);
+util.inherits(Property, events.EventEmitter);
 
 /**
- * Create new instance of neutrino base model.
- * @param {Object} propertyConfig Object which describes model properties.
- * @param {neutrino.core.Config} config Neutrino config object.
+ * Create new instance of observable property.
+ * @param {String} name Name of property.
+ * @param {*} value Begin value of property.
  * @constructor
  */
-function ModelBase(propertyConfig, config) {
+function Property(name, value) {
     var self = this;
 
     events.EventEmitter.call(self);
-    self.setMaxListeners(0);
 
-    for (var key in propertyConfig) {
-        if (!propertyConfig.hasOwnProperty(key)) {
-            continue;
-        }
-        self[key] = new neutrino.mvc.Property(key, propertyConfig[key]);
-        self[key].on('changed', function (name, oldValue, newValue) {
-            self.emit('changed', name, oldValue, newValue);
-        });
-    }
-
-    self.config_ = config;
+    self.name_ = name;
+    self.set(value);
 }
 
-//noinspection JSUnusedGlobalSymbols
 /**
- * Current neutrino config object.
- * @type {neutrino.core.Config}
+ * Property name.
+ * @type {String}
  * @private
  */
-ModelBase.prototype.config_ = null;
+Property.prototype.name_ = null;
+
+/**
+ * Property value.
+ * @type {*}
+ * @private
+ */
+Property.prototype.value_ = null;
+
+/**
+ * Set new value of property.
+ * @param {*} newValue New value for property.
+ */
+Property.prototype.set = function (newValue) {
+    var self = this,
+        oldValue = self.value_;
+    self.value_ = newValue;
+    self.emit('changed', self.name_, oldValue, newValue)
+};
+
+/**
+ * Get current value of property.
+ * @return {*}
+ */
+Property.prototype.get = function () {
+    var self = this;
+    return self.value_;
+};
+
+/**
+ * Get current value of property or set new.
+ * @param {*} newValue New value of property.
+ * @return {*}
+ */
+Property.prototype.$ = function (newValue) {
+    var self = this;
+
+    if (newValue !== undefined) {
+        self.set(newValue);
+    }
+
+    return self.get();
+};

@@ -16,7 +16,7 @@
     "main":"./index",
 
     "dependencies":{
-        "socket.io":">=0.8.7"
+        "socket.io":">=0.9.6"
     },
 
     "engines":{

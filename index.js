@@ -36,6 +36,7 @@ neutrino.defaults = require('./defaults.json');
 
 neutrino.core = {};
 neutrino.core.Config = require('./core/config.js');
+neutrino.core.Bridge = require('./core/bridge.js');
 
 neutrino.cluster = {};
 neutrino.cluster.Balancer = require('./cluster/balancer.js');
@@ -45,9 +46,11 @@ neutrino.cluster.Master = require('./cluster/master.js');
 neutrino.cluster.Worker = require('./cluster/worker.js');
 
 neutrino.mvc = {};
+neutrino.mvc.privateCondition = /^.*_$/;
 neutrino.mvc.ControllerBase = require('./mvc/controllerbase.js');
 neutrino.mvc.ModelBase = require('./mvc/modelbase.js');
 neutrino.mvc.ViewBase = require('./mvc/viewbase.js');
+neutrino.mvc.Property = require('./mvc/property.js');
 
 neutrino.security = {};
 neutrino.security.AuthProvider = require('./security/authprovider.js');

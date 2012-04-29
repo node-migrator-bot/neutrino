@@ -2,13 +2,20 @@
     "charset":"utf8",
 
     "master":{
-        "httpPort":8080
+        "httpPort":8080,
+        "eventServicesFolder":"./eventServices"
     },
 
     "worker":{
         "host":"localhost",
         "port":"50888",
         "loadSendInterval":60000
+    },
+
+    "mvc":{
+        "modelsFolder":"./models",
+        "controllersFolder":"./controllers",
+        "viewsFolder":"./views"
     },
 
     "eventBus":{
