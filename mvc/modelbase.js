@@ -40,8 +40,12 @@ util.inherits(ModelBase, events.EventEmitter);
  * @param {neutrino.core.Config} config Neutrino config object.
  * @constructor
  */
-function ModelBase(propertyConfig, config) {
+function ModelBase(config, propertyConfig) {
     var self = this;
+
+    if (!propertyConfig || typeof propertyConfig !== 'object') {
+        throw new Error('Property config must be specified');
+    }
 
     events.EventEmitter.call(self);
     self.setMaxListeners(0);

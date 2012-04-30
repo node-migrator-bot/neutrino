@@ -35,43 +35,41 @@ var util = require('util'),
 
 util.inherits(ViewBase, events.EventEmitter);
 
+//noinspection JSUnusedLocalSymbols
 /**
  * Create new instance of neutrino base view
  * @param {neutrino.core.Config} config Neutrino config object.
- * @param {neutrino.core.Bridge} bridge Neutrino server-client bridge object.
  * @constructor
  */
-function ViewBase(config, bridge) {
+function ViewBase(config) {
 
     var self = this;
 
     events.EventEmitter.call(self);
     self.setMaxListeners(0);
 
-    self.bridge_ = bridge;
 }
-
-/**
- * Current neutrino bridge instance.
- * @type {neutrino.core.Bridge}
- * @private
- */
-ViewBase.prototype.bridge_ = null;
 
 /**
  * Show error message on client.
  * @param {Error} error Exception object.
  */
-ViewBase.prototype.showError = function (error) {
-    // send error message through bridge
+ViewBase.prototype.showError = function (error, sessionId) {
+
+    var self = this;
+    self.emit('showError', error.message, sessionId);
+
 };
 
 /**
  * Show model on client.
  * @param {neutrino.mvc.ModelBase} model Model object.
  */
-ViewBase.prototype.showModel = function (model) {
-    // send model message through bridge
+ViewBase.prototype.showModel = function (model, sessionId) {
+
+    var self = this;
+    self.emit('showModel', model, sessionId);
+
 };
 
 /**
@@ -81,7 +79,10 @@ ViewBase.prototype.showModel = function (model) {
  * @param {*} newValue New property value.
  */
 ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue) {
-    // send update message through bridge
+
+    var self = this;
+    self.emit('updateValue', propertyName, oldValue, newValue);
+
 };
 
 /**
@@ -89,19 +90,19 @@ ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue) {
  * @param {String} propertyName Name of model's property.
  * @param {*} newValue New property value.
  */
-ViewBase.prototype.edit = function (propertyName, newValue) {
+ViewBase.prototype.edit = function (propertyName, newValue, sessionId) {
 
     var self = this;
-    self.emit('edit', propertyName, newValue);
+    self.emit('edit', propertyName, newValue, sessionId);
 
 };
 
 /**
  * Send model request.
  */
-ViewBase.prototype.getModel = function () {
+ViewBase.prototype.getModel = function (sessionId) {
 
     var self = this;
-    self.emit('modelRequest');
+    self.emit('modelRequest', sessionId);
 
 };

@@ -52,11 +52,11 @@ function ControllerBase(config, model, view) {
     self.view_ = view;
     self.config_ = config;
 
-    self.view_.on('edit', function (propertyName, newValue) {
+    self.view_.on('edit', function (propertyName, newValue, sessionId) {
         try {
-            self.setValue(propertyName, newValue);
+            self.setValue(propertyName, newValue, sessionId);
         } catch (e) {
-            self.view_.showError(e);
+            self.view_.showError(e, sessionId);
         }
     });
 
@@ -66,8 +66,12 @@ function ControllerBase(config, model, view) {
         }
     });
 
-    self.model_.on('modelRequest', function () {
-        self.getModel();
+    self.model_.on('modelRequest', function (sessionId) {
+        try {
+            self.getModel(sessionId);
+        } catch (e) {
+            self.view_.showError(e, sessionId);
+        }
     });
 }
 
@@ -96,7 +100,7 @@ ControllerBase.prototype.config_ = null;
  * @param {String} propertyName Property name to update.
  * @param {*} newValue New value of property.
  */
-ControllerBase.prototype.setValue = function (propertyName, newValue) {
+ControllerBase.prototype.setValue = function (propertyName, newValue, sessionId) {
 
     var self = this;
 
@@ -112,7 +116,7 @@ ControllerBase.prototype.setValue = function (propertyName, newValue) {
 
     if (validatorName in self) {
         // validator must raise an exception if new value is not valid.
-        self[validatorName](newValue);
+        self[validatorName](newValue, sessionId);
     }
 
     self.model_[propertyName].$(newValue);
@@ -122,10 +126,14 @@ ControllerBase.prototype.setValue = function (propertyName, newValue) {
 /**
  * Get model object with public properties.
  */
-ControllerBase.prototype.getModel = function () {
+ControllerBase.prototype.getModel = function (sessionId) {
 
     var self = this,
         model = {};
+
+    if (neutrino.mvc.accessValidatorName in self) {
+        self[neutrino.mvc.accessValidatorName](sessionId);
+    }
 
     for (var key in self.model_) {
 
@@ -139,5 +147,5 @@ ControllerBase.prototype.getModel = function () {
             model[key] = self.model_[key].$();
         }
     }
-    self.view_.showModel(model);
+    self.view_.showModel(model, sessionId);
 };

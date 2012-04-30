@@ -45,6 +45,7 @@ function Worker(config) {
     self.port_ = workerConfig.port_ || self.port_;
     self.loadSendInterval_ = workerConfig.loadSendInterval || self.loadSendInterval_;
 
+    self.logicSet_ = new neutrino.core.LogicSet(config);
     self.eventBusClient_ = new neutrino.cluster.EventBusClient(config);
 
     self.eventBusClient_.on('serviceMessage', function (messageObject) {
@@ -65,6 +66,8 @@ function Worker(config) {
  * @type {Number}
  */
 Worker.prototype.loadEstimationUpdateInterval_ = null;
+
+Worker.prototype.logicSet_ = null;
 
 /**
  * EBC instance.

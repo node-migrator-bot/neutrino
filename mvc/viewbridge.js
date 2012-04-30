@@ -27,3 +27,29 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+
+module.exports = Bridge;
+
+var util = require('util'),
+    events = require('events');
+
+util.inherits(Bridge, events.EventEmitter);
+
+function Bridge(config) {
+
+    var self = this;
+
+    events.EventEmitter.call(self);
+}
+
+Bridge.prototype.sendModel = function (viewName, model, sessionId) {
+
+};
+
+Bridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
+
+};
+
+Bridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue) {
+
+};
