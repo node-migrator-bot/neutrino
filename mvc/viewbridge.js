@@ -27,29 +27,52 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-
-module.exports = Bridge;
+module.exports = ViewBridge;
 
 var util = require('util'),
     events = require('events');
 
-util.inherits(Bridge, events.EventEmitter);
+util.inherits(ViewBridge, events.EventEmitter);
 
-function Bridge(config) {
+/**
+ * Create new instance of server view - client view bridge.
+ * @param {neutrino.core.Config} config Neutrino config object.
+ * @constructor
+ */
+function ViewBridge(config) {
 
     var self = this;
 
     events.EventEmitter.call(self);
 }
 
-Bridge.prototype.sendModel = function (viewName, model, sessionId) {
+/**
+ * Send model object to client.
+ * @param {String} viewName View title.
+ * @param {Object} model Model object.
+ * @param {String} sessionId User session ID.
+ */
+ViewBridge.prototype.sendModel = function (viewName, model, sessionId) {
 
 };
 
-Bridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
+/**
+ * Send error message to client.
+ * @param {String} viewName View title.
+ * @param {String} errorMessage Error text message.
+ * @param {String} sessionId User session ID.
+ */
+ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
 
 };
 
-Bridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue) {
+/**
+ * Send new value for client view.
+ * @param {String} viewName View title.
+ * @param {String} propertyName Changed property name.
+ * @param {*} oldValue Old property value.
+ * @param {*} newValue New property value.
+ */
+ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue) {
 
 };

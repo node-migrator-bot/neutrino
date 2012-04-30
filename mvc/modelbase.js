@@ -48,20 +48,87 @@ function ModelBase(config, propertyConfig) {
     }
 
     events.EventEmitter.call(self);
-    self.setMaxListeners(0);
 
-    for (var key in propertyConfig) {
-        if (!propertyConfig.hasOwnProperty(key)) {
+    self.setMaxListeners(0);
+    self.config_ = config;
+
+    self.deserialize(propertyConfig);
+
+}
+
+/**
+ * Serialize model to object.
+ * @return {Object}
+ */
+//noinspection JSUnusedGlobalSymbols
+ModelBase.prototype.serialize = function () {
+
+    var self = this,
+        modelObject = {};
+
+    for (var key in self) {
+        //noinspection JSUnfilteredForInLoop
+        if (self[key] instanceof neutrino.mvc.Property) {
+            //noinspection JSUnfilteredForInLoop
+            modelObject[key] = self[key].$();
+        }
+    }
+
+    return modelObject;
+};
+
+/**
+ * Remove all properties from model.
+ * @private
+ */
+ModelBase.prototype.removeProperties_ = function () {
+
+    var self = this,
+        oldValue;
+
+    for (var key in self) {
+        //noinspection JSUnfilteredForInLoop
+        if (self[key] instanceof neutrino.mvc.Property) {
+            //noinspection JSUnfilteredForInLoop
+            oldValue = self[key].$();
+            //noinspection JSUnfilteredForInLoop
+            delete self[key];
+            //noinspection JSUnfilteredForInLoop
+            self.emit('changed', key, oldValue, null);
+        }
+    }
+
+};
+
+/**
+ * Deserialize model from object.
+ * @param {Object} modelObject Model object which describes properties.
+ */
+ModelBase.prototype.deserialize = function (modelObject) {
+
+    var self = this,
+        oldValue;
+
+    self.removeProperties_();
+
+    for (var key in modelObject) {
+        if (!modelObject.hasOwnProperty(key)) {
             continue;
         }
-        self[key] = new neutrino.mvc.Property(key, propertyConfig[key]);
+
+        oldValue = self[key] && self[key] instanceof neutrino.mvc.Property ?
+            self[key].$() :
+            null;
+
+        self[key] = new neutrino.mvc.Property(key, modelObject[key]);
         self[key].on('changed', function (name, oldValue, newValue) {
             self.emit('changed', name, oldValue, newValue);
         });
+
+        self.emit('changed', key, oldValue, self[key].$());
     }
 
-    self.config_ = config;
-}
+};
 
 //noinspection JSUnusedGlobalSymbols
 /**

@@ -135,17 +135,20 @@ ControllerBase.prototype.getModel = function (sessionId) {
         self[neutrino.mvc.accessValidatorName](sessionId);
     }
 
-    for (var key in self.model_) {
+    var modelObject = self.model_.deserialize();
 
-        //noinspection JSUnfilteredForInLoop
+    for (var key in modelObject) {
+
+        if (!modelObject.hasOwnProperty(key)) {
+            continue;
+        }
+
         if (neutrino.mvc.privateCondition.test(key)) {
             continue;
         }
-        //noinspection JSUnfilteredForInLoop
-        if (self.model_[key] instanceof neutrino.mvc.Property) {
-            //noinspection JSUnfilteredForInLoop
-            model[key] = self.model_[key].$();
-        }
+
+        modelObject[key] = modelObject[key];
     }
     self.view_.showModel(model, sessionId);
+
 };
