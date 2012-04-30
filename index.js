@@ -46,7 +46,9 @@ neutrino.cluster.Master = require('./cluster/master.js');
 neutrino.cluster.Worker = require('./cluster/worker.js');
 
 neutrino.mvc = {};
-neutrino.mvc.accessValidatorName = 'accessValidator';
+neutrino.mvc.modelAccessValidatorName = 'accessValidator';
+neutrino.mvc.propertyValidatorFormat = '%sValidator';
+neutrino.mvc.propertyAccessValidatorFormat = '%sAccessValidator';
 neutrino.mvc.privateCondition = /^.*_$/;
 neutrino.mvc.ControllerBase = require('./mvc/controllerbase.js');
 neutrino.mvc.ModelBase = require('./mvc/modelbase.js');

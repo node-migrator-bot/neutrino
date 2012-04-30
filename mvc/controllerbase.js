@@ -112,7 +112,7 @@ ControllerBase.prototype.setValue = function (propertyName, newValue, sessionId)
         throw new Error('No property with such name');
     }
 
-    var validatorName = util.format('%sValidator', propertyName);
+    var validatorName = util.format(neutrino.mvc.propertyValidatorFormat, propertyName);
 
     if (validatorName in self) {
         // validator must raise an exception if new value is not valid.
@@ -131,11 +131,12 @@ ControllerBase.prototype.getModel = function (sessionId) {
     var self = this,
         model = {};
 
-    if (neutrino.mvc.accessValidatorName in self) {
-        self[neutrino.mvc.accessValidatorName](sessionId);
+    if (neutrino.mvc.modelAccessValidatorName in self) {
+        self[neutrino.mvc.modelAccessValidatorName](sessionId);
     }
 
-    var modelObject = self.model_.deserialize();
+    var modelObject = self.model_.deserialize(),
+        accessValidator;
 
     for (var key in modelObject) {
 
@@ -144,6 +145,12 @@ ControllerBase.prototype.getModel = function (sessionId) {
         }
 
         if (neutrino.mvc.privateCondition.test(key)) {
+            continue;
+        }
+
+        accessValidator = util.format(neutrino.mvc.propertyAccessValidatorFormat, key);
+
+        if (accessValidator in self && !self[accessValidator](sessionId)) {
             continue;
         }
 
