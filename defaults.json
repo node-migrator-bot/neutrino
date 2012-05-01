@@ -1,6 +1,14 @@
 {
     "charset":"utf8",
 
+    "db":{
+        "address":"localhost",
+        "port":"27017",
+        "username":"user",
+        "password":"tester",
+        "dbName":"neutrino"
+    },
+
     "master":{
         "httpPort":8080,
         "eventServicesFolder":"./eventServices"

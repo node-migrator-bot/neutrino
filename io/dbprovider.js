@@ -27,53 +27,8 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-module.exports = ViewBridge;
+module.exports = DbProvider;
 
-var util = require('util'),
-    events = require('events');
+function DbProvider(config) {
 
-util.inherits(ViewBridge, events.EventEmitter);
-
-/**
- * Create new instance of server view - client view bridge.
- * @param {neutrino.core.Config} config Neutrino config object.
- * @constructor
- */
-function ViewBridge(config) {
-
-    var self = this;
-
-    events.EventEmitter.call(self);
 }
-
-/**
- * Send model object to client.
- * @param {String} viewName View title.
- * @param {Object} model Model object.
- * @param {Object} sessionObject User session object.
- */
-ViewBridge.prototype.sendModel = function (viewName, model, sessionObject) {
-
-};
-
-/**
- * Send error message to client.
- * @param {String} viewName View title.
- * @param {String} errorMessage Error text message.
- * @param {Object} sessionObject User session object.
- */
-ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionObject) {
-
-};
-
-/**
- * Send new value for client view.
- * @param {String} viewName View title.
- * @param {String} propertyName Changed property name.
- * @param {*} oldValue Old property value.
- * @param {*} newValue New property value.
- * @param {Object} sessionObject User session object.
- */
-ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionObject) {
-
-};

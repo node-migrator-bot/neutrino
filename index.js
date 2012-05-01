@@ -45,11 +45,14 @@ neutrino.cluster.EventBusClient = require('./cluster/eventbusclient.js');
 neutrino.cluster.Master = require('./cluster/master.js');
 neutrino.cluster.Worker = require('./cluster/worker.js');
 
+neutrino.io = {};
+neutrino.io.DbProvider = require('./io/dbprovider.js');
+
 neutrino.mvc = {};
 neutrino.mvc.modelAccessValidatorName = 'accessValidator';
-neutrino.mvc.propertyValidatorFormat = '%sValidator';
-neutrino.mvc.propertyAccessValidatorFormat = '%sAccessValidator';
-neutrino.mvc.privateCondition = /^.*_$/;
+neutrino.mvc.propertySetValidatorFormat = '%sSetValidator';
+neutrino.mvc.propertyGetValidatorFormat = '%sGetValidator';
+neutrino.mvc.propertyPrivateRegExp = /^.*_$/;
 neutrino.mvc.ControllerBase = require('./mvc/controllerbase.js');
 neutrino.mvc.ModelBase = require('./mvc/modelbase.js');
 neutrino.mvc.ViewBase = require('./mvc/viewbase.js');
@@ -58,6 +61,7 @@ neutrino.mvc.Property = require('./mvc/property.js');
 
 neutrino.security = {};
 neutrino.security.AuthProvider = require('./security/authprovider.js');
+neutrino.security.SessionManager = require('./security/sessionmanager.js');
 neutrino.security.Logger = require('./security/logger.js');
 
 
