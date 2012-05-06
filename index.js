@@ -64,16 +64,20 @@ neutrino.security.AuthProvider = require('./security/authprovider.js');
 neutrino.security.SessionManager = require('./security/sessionmanager.js');
 neutrino.security.Logger = require('./security/logger.js');
 
+neutrino.initLogger_ = function () {
+
+    neutrino.logger = new neutrino.security.Logger(neutrino.currentConfig);
+    process.on('uncaughtException', function (error) {
+        neutrino.logger.error(error);
+    });
+
+};
 
 neutrino.start_ = function (configPath) {
 
     neutrino.currentConfig = new neutrino.core.Config(configPath);
 
-    // logger init
-    neutrino.logger = new neutrino.security.Logger(neutrino.currentConfig);
-    process.on('uncaughtException', function (error) {
-        neutrino.logger.error(error);
-    });
+    neutrino.initLogger_();
 
     if (neutrino.isMaster) {
         var master = new neutrino.cluster.Master(neutrino.currentConfig);

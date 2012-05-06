@@ -29,10 +29,9 @@
  */
 exports.dbProviderTest = function (test) {
     var neutrino = require('../index.js'),
-        Config = require('../core/config.js'),
         randomValue = Math.random(),
-        DbProvider = require('../io/dbprovider.js'),
-        dbProvider = new DbProvider(new Config());
+        config = new neutrino.core.Config(),
+        dbProvider = new neutrino.io.DbProvider(config);
 
     startTests();
 

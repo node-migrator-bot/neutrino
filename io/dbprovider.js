@@ -34,6 +34,11 @@ var mongodb = require('mongodb'),
 
 util.inherits(DbProvider, events.EventEmitter);
 
+/**
+ * Create new instance of database provider.
+ * @param {neutrino.core.Config} config Neutrino config object.
+ * @constructor
+ */
 function DbProvider(config) {
 
     var self = this,
@@ -73,12 +78,35 @@ function DbProvider(config) {
     });
 }
 
+//noinspection JSValidateJSDoc
+/**
+ * Current instance of database, which provider uses.
+ * @type {mongodb.Db}
+ * @private
+ */
 DbProvider.prototype.db_ = null;
 
+/**
+ * Is provider pass a database authentication.
+ * @type {Boolean}
+ * @private
+ */
 DbProvider.prototype.isAuth_ = false;
 
+//noinspection JSValidateJSDoc
+/**
+ * Current client for opened database.
+ * @type {mongodb.DbClient}
+ * @private
+ */
 DbProvider.prototype.dbClient_ = null;
 
+/**
+ * Handle authentication event.
+ * @param {Error} error Error object if the error was.
+ * @param {Object} result Authentication result object.
+ * @private
+ */
 DbProvider.prototype.authHandler_ = function (error, result) {
 
     var self = this;
@@ -88,6 +116,15 @@ DbProvider.prototype.authHandler_ = function (error, result) {
     self.isAuth_ = result;
 };
 
+//noinspection JSValidateJSDoc
+/**
+ * Handle database open event and start authentication.
+ * @param {String} user Database username.
+ * @param {String} password User password.
+ * @param {Error} error Error object if error was during database opening.
+ * @param {mongodb.DbClient} client Client for opened database.
+ * @private
+ */
 DbProvider.prototype.openHandler_ = function (user, password, error, client) {
 
     var self = this;
@@ -102,6 +139,10 @@ DbProvider.prototype.openHandler_ = function (user, password, error, client) {
 
 };
 
+/**
+ * Handle database close event.
+ * @private
+ */
 DbProvider.prototype.closeHandler_ = function () {
 
     var self = this;
@@ -111,6 +152,11 @@ DbProvider.prototype.closeHandler_ = function () {
 
 };
 
+/**
+ * Handle errors and provide it to next level.
+ * @param {Error} error Error object.
+ * @private
+ */
 DbProvider.prototype.errorHandler_ = function (error) {
 
     var self = this;
@@ -119,6 +165,11 @@ DbProvider.prototype.errorHandler_ = function (error) {
 
 };
 
+/**
+ * Get specified collection for query execution.
+ * @param {String} name Collection name.
+ * @param {function(mongodb.Collection)} callback Callback to handle requested collection.
+ */
 DbProvider.prototype.getCollection = function (name, callback) {
 
     var self = this,
@@ -143,6 +194,9 @@ DbProvider.prototype.getCollection = function (name, callback) {
 
 };
 
+/**
+ * Close current database.
+ */
 DbProvider.prototype.close = function () {
 
     var self = this;

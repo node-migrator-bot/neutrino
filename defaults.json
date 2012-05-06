@@ -36,6 +36,11 @@
         "workerSecret":"workerSecret"
     },
 
+    "sessions":{
+        "sessionCollectionName":"sessions",
+        "sessionExpiredMinutes":60
+    },
+
     "logger":{
         "levels":"debug+error+warn+trace",
         "debug":"./logs/%pid_debug_%y-%m-%d.log",
