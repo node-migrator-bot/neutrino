@@ -1,12 +1,14 @@
 {
     "charset":"utf8",
 
-    "db":{
-        "address":"localhost",
-        "port":"27017",
-        "username":"user",
+    "database":{
+        "host":"localhost",
+        "port":27017,
+        "user":"root",
         "password":"tester",
-        "dbName":"neutrino"
+        "name":"neutrino",
+        "options":{},
+        "serverOptions":{}
     },
 
     "master":{

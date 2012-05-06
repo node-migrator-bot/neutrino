@@ -67,12 +67,17 @@ Property.prototype.value_ = null;
 /**
  * Set new value of property.
  * @param {*} newValue New value for property.
+ * @param {Boolean} observable Is this change observable (optional).
  */
-Property.prototype.set = function (newValue) {
+Property.prototype.set = function (newValue, observable) {
     var self = this,
         oldValue = self.value_;
+
     self.value_ = newValue;
-    self.emit('changed', self.name_, oldValue, newValue)
+
+    if (observable === undefined || observable) {
+        self.emit('changed', self.name_, oldValue, newValue);
+    }
 };
 
 /**
