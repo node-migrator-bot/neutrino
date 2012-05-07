@@ -40,6 +40,14 @@ exports.sessionManagerTest = function (test) {
 
     test.expect(15);
 
+    sessionManager1.on('error', function (error) {
+        test.ifError(error);
+    });
+
+    sessionManager2.on('error', function (error) {
+        test.ifError(error);
+    });
+
     startTest();
 
     function startTest() {
