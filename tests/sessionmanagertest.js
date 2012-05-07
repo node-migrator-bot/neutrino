@@ -28,79 +28,61 @@
  * maintained libraries.
  */
 
+var neutrino = require('../index.js'),
+    config = new neutrino.core.Config(),
+    randomValue = Math.random(),
+    createdSessionId,
+    sessionManager1 = new neutrino.security.SessionManager(config),
+    sessionManager2 = new neutrino.security.SessionManager(config);
 
-exports.sessionManagerTest = function (test) {
-
-    var neutrino = require('../index.js'),
-        config = new neutrino.core.Config(),
-        randomValue = Math.random(),
-        createdSessionId,
-        sessionManager1 = new neutrino.security.SessionManager(config),
-        sessionManager2 = new neutrino.security.SessionManager(config);
-
-    test.expect(15);
-
-    sessionManager1.on('error', function (error) {
+exports['Create session'] = function (test) {
+    test.expect(3);
+    var toAdd = {
+        user:'test',
+        key:randomValue
+    };
+    sessionManager1.create(toAdd, function (error, object, sessionId) {
         test.ifError(error);
+        test.deepEqual(object.user, 'test');
+        test.deepEqual(object.key, randomValue);
+        createdSessionId = sessionId;
+        test.done();
     });
+};
 
-    sessionManager2.on('error', function (error) {
+exports['Get session'] = function (test) {
+    test.expect(3);
+    sessionManager2.$(createdSessionId, function (error, object) {
         test.ifError(error);
+        test.deepEqual(object.user, 'test');
+        test.deepEqual(object.key, randomValue);
+        test.done();
     });
+};
 
-    startTest();
-
-    function startTest() {
-        createTest();
-    }
-
-    function createTest() {
-        var toAdd = {
-            user:'test',
-            key:randomValue
-        };
-        sessionManager1.create(toAdd, function (error, object, sessionId) {
-            test.ifError(error);
-            test.deepEqual(object.user, 'test');
-            test.deepEqual(object.key, randomValue);
-            createdSessionId = sessionId;
-            getTest('test', function () {
-                setTest();
-            });
-        });
-    }
-
-    function getTest(user, callback) {
-
+exports['Set value to session'] = function (test) {
+    test.expect(6);
+    sessionManager1.$(createdSessionId, function (error, object) {
+        test.ifError(error);
+        test.deepEqual(object.user, 'test2');
+        test.deepEqual(object.key, randomValue);
         sessionManager2.$(createdSessionId, function (error, object) {
-            test.ifError(error);
-            test.deepEqual(object.user, user);
-            test.deepEqual(object.key, randomValue);
-            callback();
-        });
-    }
-
-    function setTest() {
-
-        sessionManager1.$(createdSessionId, function (error, object) {
             test.ifError(error);
             test.deepEqual(object.user, 'test2');
             test.deepEqual(object.key, randomValue);
-            getTest('test2', function () {
-                removeTest();
-            });
-        }, {user:'test2'});
-    }
-
-    function removeTest() {
-        sessionManager1.remove(createdSessionId, function (error) {
-            test.ifError(error);
-            sessionManager2.get(createdSessionId, function (error, object) {
-                test.ifError(error);
-                test.deepEqual(object, null);
-                test.done();
-            });
+            test.done();
         });
-    }
+    }, {user:'test2'});
+};
 
+exports['Remove session'] = function (test) {
+    test.expect(3);
+    sessionManager1.remove(createdSessionId, function (error) {
+        test.ifError(error);
+        sessionManager2.get(createdSessionId, function (error, object) {
+            test.ifError(error);
+            test.deepEqual(object, null);
+            test.done();
+        });
+    });
 };

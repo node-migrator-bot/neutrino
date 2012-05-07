@@ -27,64 +27,52 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-exports.dbProviderTest = function (test) {
-    var neutrino = require('../index.js'),
-        randomValue = Math.random(),
-        config = new neutrino.core.Config(),
-        dbProvider = new neutrino.io.DbProvider(config);
+var neutrino = require('../index.js'),
+    randomValue = Math.random(),
+    config = new neutrino.core.Config(),
+    dbProvider = new neutrino.io.DbProvider(config);
 
-    test.expect(8);
-
-    dbProvider.on('error', function (error) {
-        test.ifError(error);
+exports["Create collection and insert to database"] = function (test) {
+    test.expect(2);
+    dbProvider.getCollection('testNeutrino', function (collection) {
+        collection.insert({hello:'world', test:randomValue}, function (error, object) {
+            test.ifError(error);
+            test.deepEqual(object[0].test, randomValue);
+            test.done();
+        });
     });
+};
 
-    startTests();
-
-    function startTests() {
-        insertTest();
-    }
-
-    function insertTest() {
-        dbProvider.getCollection('testNeutrino', function (collection) {
-            collection.insert({hello:'world', test:randomValue}, function (error, object) {
-                test.ifError(error);
-                test.deepEqual(object[0].test, randomValue);
-                findTest();
-            });
+exports["Find in collection"] = function (test) {
+    test.expect(3);
+    dbProvider.getCollection('testNeutrino', function (collection) {
+        collection.findOne({test:randomValue}, function (error, object) {
+            test.ifError(error);
+            test.deepEqual(object.hello, 'world');
+            test.deepEqual(object.test, randomValue);
+            test.done();
         });
-    }
+    });
+};
 
-    function findTest() {
-        dbProvider.getCollection('testNeutrino', function (collection) {
-            collection.findOne({test:randomValue}, function (error, object) {
-                test.ifError(error);
-                test.deepEqual(object.hello, 'world');
-                test.deepEqual(object.test, randomValue);
-                removeTest();
-            });
+exports['Remove from collection'] = function (test) {
+    test.expect(2);
+    dbProvider.getCollection('testNeutrino', function (collection) {
+        collection.remove({test:randomValue}, {safe:true}, function (error, removedCount) {
+            test.ifError(error);
+            test.deepEqual(removedCount, 1, 'Item to remove not found');
+            test.done();
         });
 
-    }
+    });
+};
 
-    function removeTest() {
-        dbProvider.getCollection('testNeutrino', function (collection) {
-            collection.remove({test:randomValue}, {safe:true}, function (error, removedCount) {
-                test.ifError(error);
-                test.deepEqual(removedCount, 1, 'Item to remove not found');
-                dropTest();
-            });
-
-        });
-    }
-
-    function dropTest() {
-
-        dbProvider.getCollection('testNeutrino', function (collection) {
-            collection.drop(function (error) {
-                test.ifError(error);
-                test.done();
-            })
-        });
-    }
+exports['Drop collection from database'] = function (test) {
+    test.expect(1);
+    dbProvider.getCollection('testNeutrino', function (collection) {
+        collection.drop(function (error) {
+            test.ifError(error);
+            test.done();
+        })
+    });
 };
