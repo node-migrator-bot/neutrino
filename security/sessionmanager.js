@@ -116,8 +116,8 @@ SessionManager.prototype.storage_ = null;
 SessionManager.prototype.create = function (sessionObject, callback) {
 
     var self = this,
-        now = new Date(),
-        expiredDate = now.setMilliseconds(now.getMilliseconds() + self.expiredTimeout_),
+        now = new Date().getTime(),
+        expiredDate = now + self.expiredTimeout_,
         execute = function () {
             sessionObject.expired = expiredDate;
             self.storage_.insert(sessionObject, {safe:true}, function (error, objects) {
@@ -208,8 +208,8 @@ SessionManager.prototype.get = function (sessionId, callback) {
 SessionManager.prototype.set = function (sessionId, setParameters, callback) {
 
     var self = this,
-        now = new Date(),
-        expiredDate = now.setMilliseconds(now.getMilliseconds() + self.expiredTimeout_),
+        now = new Date().getTime(),
+        expiredDate = now + self.expiredTimeout_,
         execute = function () {
 
             setParameters.expired = expiredDate;
