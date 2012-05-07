@@ -117,5 +117,5 @@ exports['Expired session get'] = function (test) {
             test.done();
         });
 
-    }, config.$('sessions').checkExpiredInterval + 100);
+    }, config.$('sessions').checkExpiredInterval * 2 + 100);
 };
