@@ -31,7 +31,6 @@ neutrino = {};
 module.exports = neutrino;
 
 neutrino.version = '0.0.1';
-neutrino.isMaster = false;
 neutrino.defaults = require('./defaults.json');
 
 neutrino.core = {};
@@ -64,35 +63,36 @@ neutrino.security.AuthProvider = require('./security/authprovider.js');
 neutrino.security.SessionManager = require('./security/sessionmanager.js');
 neutrino.security.Logger = require('./security/logger.js');
 
-neutrino.initLogger_ = function () {
+neutrino.init_ = function () {
 
     neutrino.logger = new neutrino.security.Logger(neutrino.currentConfig);
     process.on('uncaughtException', function (error) {
         neutrino.logger.error(error);
     });
 
+    neutrino.sessionManager = new neutrino.security.SessionManager(neutrino.currentConfig);
+
 };
 
-neutrino.start_ = function (configPath) {
+neutrino.start_ = function (configPath, isMaster) {
 
     neutrino.currentConfig = new neutrino.core.Config(configPath);
 
-    neutrino.initLogger_();
+    neutrino.init_();
 
-    if (neutrino.isMaster) {
-        var master = new neutrino.cluster.Master(neutrino.currentConfig);
-        master.start();
+    if (isMaster) {
+        neutrino.master = new neutrino.cluster.Master(neutrino.currentConfig);
+        neutrino.master.start();
     } else {
-        var worker = new neutrino.cluster.Worker(neutrino.currentConfig);
-        worker.start();
+        neutrino.worker = new neutrino.cluster.Worker(neutrino.currentConfig);
+        neutrino.worker.start();
     }
 };
 
 neutrino.startMaster = function (configPath) {
-    neutrino.isMaster = true;
-    neutrino.start_(configPath);
+    neutrino.start_(configPath, true);
 };
 
 neutrino.startWorker = function (configPath) {
-    neutrino.start_(configPath);
+    neutrino.start_(configPath, false);
 };

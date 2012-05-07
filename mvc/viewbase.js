@@ -39,38 +39,47 @@ util.inherits(ViewBase, events.EventEmitter);
 /**
  * Create new instance of neutrino base view
  * @param {neutrino.core.Config} config Neutrino config object.
+ * @param {String} name Name of view.
  * @constructor
  */
-function ViewBase(config) {
+function ViewBase(config, name) {
 
     var self = this;
 
     events.EventEmitter.call(self);
     self.setMaxListeners(0);
 
+    self.name = name;
+
 }
+
+/**
+ * Current view name.
+ * @type {String}
+ */
+ViewBase.prototype.name = '';
 
 /**
  * Show error message on client.
  * @param {Error} error Exception object.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.showError = function (error, sessionObject) {
+ViewBase.prototype.showError = function (error, sessionId) {
 
     var self = this;
-    self.emit('showError', error.message, sessionObject);
+    self.emit('showError', error.message, sessionId);
 
 };
 
 /**
  * Show model on client.
  * @param {neutrino.mvc.ModelBase} model Model object.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.showModel = function (model, sessionObject) {
+ViewBase.prototype.showModel = function (model, sessionId) {
 
     var self = this;
-    self.emit('showModel', model, sessionObject);
+    self.emit('showModel', model, sessionId);
 
 };
 
@@ -78,12 +87,12 @@ ViewBase.prototype.showModel = function (model, sessionObject) {
  * Show property value on client.
  * @param {String} propertyName Model property name.
  * @param {*} value Current model property value.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.showValue = function (propertyName, value, sessionObject) {
+ViewBase.prototype.showValue = function (propertyName, value, sessionId) {
 
     var self = this;
-    self.emit('showValue', propertyName, value, sessionObject);
+    self.emit('showValue', propertyName, value, sessionId);
 
 };
 
@@ -92,12 +101,12 @@ ViewBase.prototype.showValue = function (propertyName, value, sessionObject) {
  * @param {String} propertyName Name of model's property.
  * @param {*} oldValue Old property value.
  * @param {*} newValue New property value.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue, sessionObject) {
+ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue, sessionId) {
 
     var self = this;
-    self.emit('updateValue', propertyName, oldValue, newValue, sessionObject);
+    self.emit('updateValue', propertyName, oldValue, newValue, sessionId);
 
 };
 
@@ -105,56 +114,57 @@ ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue, ses
  * Send edit request for model property.
  * @param {String} propertyName Name of model's property.
  * @param {*} newValue New property value.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.edit = function (propertyName, newValue, sessionObject) {
+ViewBase.prototype.edit = function (propertyName, newValue, sessionId) {
 
     var self = this;
-    self.emit('edit', propertyName, newValue, sessionObject);
+    self.emit('edit', propertyName, newValue, sessionId);
 
 };
 
 /**
  * Send model request.
- * @param {Object} sessionObject
+ * @param {Object} sessionId
  */
-ViewBase.prototype.getModel = function (sessionObject) {
+ViewBase.prototype.getModel = function (sessionId) {
 
     var self = this;
-    self.emit('modelRequest', sessionObject);
+    self.emit('modelRequest', sessionId);
 
 };
 
+//noinspection JSUnusedGlobalSymbols
 /**
  * Send value request.
  * @param {String} propertyName Name of property.
- * @param {Object} sessionObject
+ * @param {Object} sessionId
  */
-ViewBase.prototype.getValue = function (propertyName, sessionObject) {
+ViewBase.prototype.getValue = function (propertyName, sessionId) {
 
     var self = this;
-    self.emit('valueRequest', propertyName, sessionObject);
+    self.emit('valueRequest', propertyName, sessionId);
 
 };
 
 /**
  * Send subscribe signal and send session object.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.subscribe = function (sessionObject) {
+ViewBase.prototype.subscribe = function (sessionId) {
 
     var self = this;
-    self.emit('subscribe', sessionObject);
+    self.emit('subscribe', sessionId);
 
 };
 
 /**
  * Send unsubscribe signal and send session object.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ViewBase.prototype.unsubscribe = function (sessionObject) {
+ViewBase.prototype.unsubscribe = function (sessionId) {
 
     var self = this;
-    self.emit('unsubscribe', sessionObject);
+    self.emit('unsubscribe', sessionId);
 
 };

@@ -37,10 +37,11 @@ util.inherits(ModelBase, events.EventEmitter);
 /**
  * Create new instance of neutrino base model.
  * @param {Object} propertyConfig Object which describes model properties.
+ * @param {String} name Name of model.
  * @param {neutrino.core.Config} config Neutrino config object.
  * @constructor
  */
-function ModelBase(config, propertyConfig) {
+function ModelBase(config, name, propertyConfig) {
     var self = this;
 
     if (!propertyConfig || typeof propertyConfig !== 'object') {
@@ -51,10 +52,30 @@ function ModelBase(config, propertyConfig) {
 
     self.setMaxListeners(0);
     self.config_ = config;
+    self.name = name;
+
+    self.on('change', function (propertyName, oldValue, newValue, syncRequired) {
+        self.changeHandler_(propertyName, oldValue, newValue, syncRequired);
+    });
+
 
     self.deserialize(propertyConfig);
 
 }
+
+//noinspection JSUnusedGlobalSymbols
+/**
+ * Current neutrino config object.
+ * @type {neutrino.core.Config}
+ * @private
+ */
+ModelBase.prototype.config_ = null;
+
+/**
+ * Current model name.
+ * @type {String}
+ */
+ModelBase.prototype.name = '';
 
 /**
  * Serialize model to object.
@@ -78,29 +99,6 @@ ModelBase.prototype.serialize = function () {
 };
 
 /**
- * Remove all properties from model.
- * @private
- */
-ModelBase.prototype.removeProperties_ = function () {
-
-    var self = this,
-        oldValue;
-
-    for (var key in self) {
-        //noinspection JSUnfilteredForInLoop
-        if (self[key] instanceof neutrino.mvc.Property) {
-            //noinspection JSUnfilteredForInLoop
-            oldValue = self[key].$();
-            //noinspection JSUnfilteredForInLoop
-            delete self[key];
-            //noinspection JSUnfilteredForInLoop
-            self.emit('changed', key, oldValue, null);
-        }
-    }
-
-};
-
-/**
  * Deserialize model from object.
  * @param {Object} modelObject Model object which describes properties.
  */
@@ -109,7 +107,13 @@ ModelBase.prototype.deserialize = function (modelObject) {
     var self = this,
         oldValue;
 
-    self.removeProperties_();
+    for (var removeKey in self) {
+        //noinspection JSUnfilteredForInLoop
+        if (self[removeKey] instanceof neutrino.mvc.Property) {
+            //noinspection JSUnfilteredForInLoop
+            delete self[removeKey];
+        }
+    }
 
     for (var key in modelObject) {
         if (!modelObject.hasOwnProperty(key)) {
@@ -125,15 +129,55 @@ ModelBase.prototype.deserialize = function (modelObject) {
             self.emit('changed', name, oldValue, newValue);
         });
 
-        self.emit('changed', key, oldValue, self[key].$());
+        self.emit('changed', key, oldValue, self[key].$(), false);
     }
 
 };
 
-//noinspection JSUnusedGlobalSymbols
+ModelBase.prototype.dataMessageHandler = function (data) {
+
+    var self = this;
+    self.emit('data', data);
+
+};
+
+ModelBase.prototype.syncMessageHandler = function (data) {
+
+    var self = this;
+
+    if (!data || !data.modelName || data.modelName !== self.name) {
+        return;
+    }
+
+    if (!data.propertyName ||
+        !(data.propertyName in self) ||
+        !(self[data.propertyName] instanceof neutrino.mvc.Property)) {
+        return;
+    }
+
+    var oldValue = self[data.propertyName].$();
+    self[data.propertyName].$(data.newValue, false);
+    self.emit('change', data.propertyName, oldValue, data.newValue, false);
+};
+
 /**
- * Current neutrino config object.
- * @type {neutrino.core.Config}
+ * Handle all model properties changes and send sync messages.
+ * @param {String} propertyName Model property name.
+ * @param {*} oldValue Old value of property.
+ * @param {*} newValue New value of property.
+ * @param {Boolean} syncRequired Is sync required (optional).
  * @private
  */
-ModelBase.prototype.config_ = null;
+ModelBase.prototype.changeHandler_ = function (propertyName, oldValue, newValue, syncRequired) {
+
+    var self = this;
+
+    if (syncRequired === undefined || syncRequired === true) {
+        self.emit('sendSync', {
+            modelName:self.name,
+            propertyName:propertyName,
+            oldValue:oldValue,
+            newValue:newValue
+        });
+    }
+};

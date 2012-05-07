@@ -40,15 +40,17 @@ util.inherits(LogicSet, event.EventEmitter);
 /**
  * Create new instance of neutrino logic set.
  * @param {neutrino.core.Config} config Neutrino config object.
+ * @param {neutrino.cluster.Worker} worker Worker which is the owner of this logic set.
  * @constructor
  */
-function LogicSet(config) {
+function LogicSet(config, worker) {
 
     var self = this,
         mvcConfig = config.$('mvc') || {};
 
     event.EventEmitter.call(self);
 
+    self.worker_ = worker;
     self.config_ = config;
 
     self.modelsFolder_ = mvcConfig.modelsFolder_ || self.modelsFolder_;
@@ -61,8 +63,40 @@ function LogicSet(config) {
     self.controllers_ = {};
     self.views_ = {};
 
+    self.worker_.on('data', function (data) {
+
+        for (var modelName in self.models_) {
+
+            if (!self.models_.hasOwnProperty(modelName)) {
+                continue;
+            }
+            self.models_[modelName].dataMessageHandler(data);
+
+        }
+    });
+
+    self.worker_.on('sync', function (data) {
+
+        for (var modelName in self.models_) {
+
+            if (!self.models_.hasOwnProperty(modelName)) {
+                continue;
+            }
+            self.models_[modelName].syncMessageHandler(data);
+
+        }
+
+    });
+
     self.initModels_();
 }
+
+/**
+ * Owner worker.
+ * @type {neutrino.cluster.Worker}
+ * @private
+ */
+LogicSet.prototype.worker_ = null;
 
 /**
  * Current config object.
@@ -130,38 +164,38 @@ LogicSet.prototype.linkView_ = function (viewName) {
     var self = this,
         view = self.views_[viewName];
 
-    view.on('showError', function (errorMessage, sessionObject) {
-        self.bridge_.sendError(viewName, errorMessage, sessionObject);
+    view.on('showError', function (errorMessage, sessionId) {
+        self.bridge_.sendError(viewName, errorMessage, sessionId);
     });
 
-    view.on('showModel', function (model, sessionObject) {
-        self.bridge_.sendModel(viewName, model, sessionObject);
+    view.on('showModel', function (model, sessionId) {
+        self.bridge_.sendModel(viewName, model, sessionId);
     });
 
-    view.on('updateValue', function (propertyName, oldValue, newValue, sessionObject) {
-        self.bridge_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionObject);
+    view.on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
+        self.bridge_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
-    self.bridge_.on('modelRequest', function (requestViewName, sessionObject) {
+    self.bridge_.on('modelRequest', function (requestViewName, sessionId) {
         if (requestViewName !== viewName) {
             return;
         }
-        view.getModel(sessionObject);
+        view.getModel(sessionId);
     });
 
-    self.bridge_.on('editRequest', function (requestViewName, propertyName, newValue, sessionObject) {
+    self.bridge_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId) {
         if (requestViewName !== viewName) {
             return;
         }
-        view.edit(propertyName, newValue, sessionObject);
+        view.edit(propertyName, newValue, sessionId);
     });
 
-    self.bridge_.on('subscribe', function (sessionObject) {
-        view.subscribe(sessionObject);
+    self.bridge_.on('subscribe', function (sessionId) {
+        view.subscribe(sessionId);
     });
 
-    self.bridge_.on('unsubscribe', function (sessionObject) {
-        view.unsubscribe(sessionObject);
+    self.bridge_.on('unsubscribe', function (sessionId) {
+        view.unsubscribe(sessionId);
     });
 };
 
@@ -203,15 +237,14 @@ LogicSet.prototype.initModels_ = function () {
             }
 
             //noinspection UnnecessaryLocalVariableJS
-            var model = new modelConstructor(self.config_),
-                view = new viewConstructor(self.config_, self.bridge_),
-                controller = new controllerConstructor(self.config_, model, view),
+            var modelName = path.basename(file, '.js'),
+                model = new modelConstructor(self.config_, modelName),
+                view = new viewConstructor(self.config_, modelName),
+                controller = new controllerConstructor(self.config_, modelName, model, view);
 
-                modelName = path.basename(file, '.js');
-
-            model.name = modelName;
-            controller.name = modelName;
-            view.name = modelName;
+            model.on('sendSync', function (message) {
+                self.worker_.sendSyncMessage(message);
+            });
 
             self.models_[modelName] = model;
             self.controllers_[modelName] = controller;

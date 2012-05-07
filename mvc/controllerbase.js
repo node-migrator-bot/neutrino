@@ -37,11 +37,12 @@ util.inherits(ControllerBase, events.EventEmitter);
 /**
  * Implements all base controller actions and validate methods.
  * @param {neutrino.core.Config} config Object with current configuration.
+ * @param {String} name Name of controller.
  * @param {neutrino.mvc.ModelBase} model Controller's model.
  * @param {neutrino.mvc.ViewBase} view View connected with controller.
  * @constructor
  */
-function ControllerBase(config, model, view) {
+function ControllerBase(config, name, model, view) {
 
     var self = this;
 
@@ -51,38 +52,46 @@ function ControllerBase(config, model, view) {
     self.model_ = model;
     self.view_ = view;
     self.config_ = config;
+    self.name = name;
 
     self.subscribers_ = {};
 
-    self.view_.on('edit', function (propertyName, newValue, sessionObject) {
-        try {
-            self.setValue(propertyName, newValue, sessionObject);
-        } catch (e) {
-            self.view_.showError(e, sessionObject);
-        }
+    self.on('error', function (error, sessionId) {
+        if (!sessionId) return;
+        self.view_.showError(error, sessionId);
     });
 
-    self.view_.on('subscribe', function (sessionObject) {
-        self.subscribe(sessionObject);
+    self.view_.on('edit', function (propertyName, newValue, sessionId) {
+        self.setValue(propertyName, newValue, sessionId);
     });
 
-    self.view_.on('unsubscribe', function (sessionObject) {
-        self.unsubscribe(sessionObject);
+    self.view_.on('subscribe', function (sessionId) {
+        self.subscribe(sessionId);
+    });
+
+    self.view_.on('unsubscribe', function (sessionId) {
+        self.unsubscribe(sessionId);
+    });
+
+    self.view_.on('modelRequest', function (sessionId) {
+        self.getModel(sessionId);
     });
 
     self.model_.on('changed', function (propertyName, oldValue, newValue) {
         self.modelUpdateHandler(propertyName, oldValue, newValue);
     });
 
-    self.model_.on('modelRequest', function (sessionObject) {
-        try {
-            self.getModel(sessionObject);
-        } catch (e) {
-            self.view_.showError(e, sessionObject);
-        }
+    self.model_.on('error', function (error) {
+        self.emit('error', error);
     });
 
 }
+
+/**
+ * Current controller name.
+ * @type {String}
+ */
+ControllerBase.prototype.name = '';
 
 /**
  * Model of controller.
@@ -110,99 +119,159 @@ ControllerBase.prototype.subscribers_ = null;
  * Set new value for specified property of model.
  * @param {String} propertyName Property name to update.
  * @param {*} newValue New value of property.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ControllerBase.prototype.setValue = function (propertyName, newValue, sessionObject) {
+ControllerBase.prototype.setValue = function (propertyName, newValue, sessionId) {
 
-    var self = this;
+    var self = this,
+        execute = function () {
 
-    if (!(propertyName in self.model_)) {
-        throw new Error('No property with such name');
+            if (!(propertyName in self.model_)) {
+                self.emit('error', Error('No property with such name'), sessionId);
+            }
+
+            if (neutrino.mvc.propertyPrivateRegExp.test(propertyName)) {
+                self.emit('error', Error('Can not get or set private properties'), sessionId);
+            }
+
+            var setValidatorName = util.format(neutrino.mvc.propertySetValidatorFormat, propertyName);
+
+            // use set property validator if it exists
+            if (setValidatorName in self) {
+
+                self[setValidatorName](newValue, sessionId, function (error) {
+
+                    if (error) {
+                        self.emit('error', error, sessionId);
+                    } else {
+                        self.model_[propertyName].$(newValue);
+                    }
+
+                });
+
+            } else {
+                self.model_[propertyName].$(newValue);
+            }
+        };
+
+    // use model access validator if it exists.
+    if (neutrino.mvc.modelAccessValidatorName in self) {
+        self[neutrino.mvc.modelAccessValidatorName](sessionId, function (error) {
+            if (error) {
+                self.emit('error', error, sessionId);
+            } else {
+                execute();
+            }
+        });
+    } else {
+        execute();
     }
-
-    if (neutrino.mvc.propertyPrivateRegExp.test(propertyName)) {
-        throw new Error('Can not get or set private properties');
-    }
-
-    var setValidatorName = util.format(neutrino.mvc.propertySetValidatorFormat, propertyName);
-
-    if (setValidatorName in self) {
-        // validator must raise an exception if new value is not valid.
-        self[setValidatorName](newValue, sessionObject);
-    }
-
-    self.model_[propertyName].$(newValue);
-
 };
 
+//noinspection JSUnusedGlobalSymbols
 /**
  * Get current model property value.
  * @param {String} propertyName Name of model property.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ControllerBase.prototype.getValue = function (propertyName, sessionObject) {
+ControllerBase.prototype.getValue = function (propertyName, sessionId) {
 
-    var self = this;
+    var self = this,
+        execute = function () {
 
+            if (!(propertyName in self.model_)) {
+                throw new Error('No property with such name');
+            }
+
+            if (neutrino.mvc.propertyPrivateRegExp.test(propertyName)) {
+                throw new Error('Can not get or set private properties');
+            }
+
+            var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, propertyName);
+
+            if (getValidatorName in self) {
+                self[getValidatorName](sessionId, function (error) {
+                    if (error) {
+                        self.emit('error', error, sessionId);
+                    } else {
+                        self.view_.showValue(propertyName, self.model_[propertyName].$(), sessionId);
+                    }
+                });
+            } else {
+                self.view_.showValue(propertyName, self.model_[propertyName].$(), sessionId);
+            }
+
+        };
+
+    // use model access validator if it exists.
     if (neutrino.mvc.modelAccessValidatorName in self) {
-        self[neutrino.mvc.modelAccessValidatorName](sessionObject);
+        self[neutrino.mvc.modelAccessValidatorName](sessionId, function (error) {
+            if (error) {
+                self.emit('error', error, sessionId);
+            } else {
+                execute();
+            }
+        });
+    } else {
+        execute();
     }
-
-    if (!(propertyName in self.model_)) {
-        throw new Error('No property with such name');
-    }
-
-    if (neutrino.mvc.propertyPrivateRegExp.test(propertyName)) {
-        throw new Error('Can not get or set private properties');
-    }
-
-    var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, propertyName);
-
-    if (getValidatorName in self) {
-        self[getValidatorName](sessionObject);
-    }
-
-    self.view_.showValue(propertyName, self.model_[propertyName].$(), sessionObject);
 };
 
 /**
  * Get model object with public properties.
- * @param {Object} sessionObject User session object.
+ * @param {Object} sessionId User session ID.
  */
-ControllerBase.prototype.getModel = function (sessionObject) {
+ControllerBase.prototype.getModel = function (sessionId) {
 
     var self = this,
-        model = {};
+        model = {},
+        execute = function () {
+
+            var modelObject = self.model_.serialize();
+
+            for (var key in modelObject) {
+
+                if (!modelObject.hasOwnProperty(key)) {
+                    continue;
+                }
+
+                if (neutrino.mvc.propertyPrivateRegExp.test(key)) {
+                    continue;
+                }
+
+                var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, key);
+
+                if (getValidatorName in self) {
+                    // because key is mutable we must use immediate function
+                    (function (currentKey) {
+                        self[getValidatorName](sessionId, function (error) {
+                            if (!error) {
+                                model[currentKey] = modelObject[currentKey];
+                            }
+                        });
+                    })(key);
+
+                } else {
+                    model[key] = modelObject[key];
+                }
+
+            }
+            self.view_.showModel(model, sessionId);
+        };
 
     if (neutrino.mvc.modelAccessValidatorName in self) {
-        self[neutrino.mvc.modelAccessValidatorName](sessionObject);
-    }
 
-    var modelObject = self.model_.deserialize();
-
-    for (var key in modelObject) {
-
-        if (!modelObject.hasOwnProperty(key)) {
-            continue;
-        }
-
-        if (neutrino.mvc.propertyPrivateRegExp.test(key)) {
-            continue;
-        }
-
-        var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, key);
-
-        if (getValidatorName in self) {
-            try {
-                self[getValidatorName](sessionObject);
-            } catch (e) {
-                continue;
+        self[neutrino.mvc.modelAccessValidatorName](sessionId, function (error) {
+            if (error) {
+                self.emit('error', error, sessionId);
+            } else {
+                execute();
             }
-        }
+        });
 
-        modelObject[key] = modelObject[key];
+    } else {
+        execute();
     }
-    self.view_.showModel(model, sessionObject);
 
 };
 
@@ -219,8 +288,7 @@ ControllerBase.prototype.modelUpdateHandler = function (propertyName, oldValue, 
         return;
     }
 
-    var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, propertyName),
-        sessionObject;
+    var getValidatorName = util.format(neutrino.mvc.propertyGetValidatorFormat, propertyName);
 
     for (var sessionId in self.subscribers_) {
 
@@ -228,42 +296,44 @@ ControllerBase.prototype.modelUpdateHandler = function (propertyName, oldValue, 
             continue;
         }
 
-        sessionObject = self.subscribers_[sessionId];
-
         if (getValidatorName in self) {
-
-            try {
-                self[getValidatorName](sessionObject);
-            } catch (e) {
-                continue;
-            }
+            // because sessionId is mutable we must use immediate function
+            (function (sid) {
+                self[getValidatorName](sessionId, function (error) {
+                    if (error) {
+                        self.emit('error', error, sid)
+                    } else {
+                        self.view_.updateValue(propertyName, oldValue, newValue, sid);
+                    }
+                });
+            })(sessionId);
+        } else {
+            self.view_.updateValue(propertyName, oldValue, newValue, sessionId);
         }
-
-        self.view_.updateValue(propertyName, oldValue, newValue, sessionObject);
     }
 
 };
 
-ControllerBase.prototype.subscribe = function (sessionObject) {
+ControllerBase.prototype.subscribe = function (sessionId) {
 
     var self = this;
 
-    if (!sessionObject.sid) {
+    if (!sessionId) {
         return;
     }
 
-    self.subscribers_[sessionObject.sid] = sessionObject;
+    self.subscribers_[sessionId] = true;
 
 };
 
-ControllerBase.prototype.unsubscribe = function (sessionObject) {
+ControllerBase.prototype.unsubscribe = function (sessionId) {
 
     var self = this;
 
-    if (!sessionObject.sid) {
+    if (!sessionId) {
         return;
     }
 
-    delete self.subscribers_[sessionObject.sid];
+    delete self.subscribers_[sessionId];
 
 };

@@ -29,7 +29,10 @@
  */
 module.exports = Worker;
 
-var util = require('util');
+var util = require('util'),
+    events = require('events');
+
+util.inherits(Worker, events.EventEmitter);
 
 /**
  * Create new instance of worker node.
@@ -41,11 +44,14 @@ function Worker(config) {
     var self = this,
         workerConfig = config.$('worker') || {};
 
+    events.EventEmitter.call(self);
+
+    self.id = util.format('%d:%d:%d', process.pid, new Date().getTime(), Math.random());
     self.host_ = workerConfig.host || self.host_;
     self.port_ = workerConfig.port_ || self.port_;
     self.loadSendInterval_ = workerConfig.loadSendInterval || self.loadSendInterval_;
 
-    self.logicSet_ = new neutrino.core.LogicSet(config);
+    self.logicSet_ = new neutrino.core.LogicSet(config, self);
     self.eventBusClient_ = new neutrino.cluster.EventBusClient(config);
 
     self.eventBusClient_.on('serviceMessage', function (messageObject) {
@@ -62,11 +68,23 @@ function Worker(config) {
 }
 
 /**
+ * Current worker ID.
+ * @type {String}
+ */
+Worker.prototype.id = '';
+
+//noinspection JSUnusedGlobalSymbols
+/**
  * Load update sending interval handler.
  * @type {Number}
  */
 Worker.prototype.loadEstimationUpdateInterval_ = null;
 
+/**
+ * Current logic set of worker.
+ * @type {neutrino.core.LogicSet}
+ * @private
+ */
 Worker.prototype.logicSet_ = null;
 
 /**
@@ -102,6 +120,10 @@ Worker.prototype.host_ = neutrino.defaults.worker.host;
  */
 Worker.prototype.port_ = neutrino.defaults.worker.port;
 
+/**
+ * Send load estimation to master.
+ * @private
+ */
 Worker.prototype.loadEstimationUpdate_ = function () {
 
     var self = this;
@@ -130,6 +152,34 @@ Worker.prototype.start = function () {
  * Handle all incoming messages.
  * @param {Object} messageObject Incoming message object.
  */
-Worker.prototype.messageHandler = function (messageObject) {
+Worker.prototype.messageHandler_ = function (messageObject) {
 
+    if (!messageObject || !messageObject.type) {
+        return;
+    }
+
+    if (messageObject.sender && messageObject.sender === self.id) {
+        return;
+    }
+
+    if (messageObject.type !== 'sync' && messageObject.type !== 'data') {
+        return;
+    }
+
+    self.emit(messageObject.type, messageObject.value);
+};
+
+/**
+ * Send synchronization message to master.
+ * @param {Object} data Synchronization data.
+ */
+Worker.prototype.sendSyncMessage = function (data) {
+
+    var self = this;
+
+    self.eventBusClient_.sendToMaster({
+        type:'sync',
+        sender:self.id,
+        value:data
+    });
 };
