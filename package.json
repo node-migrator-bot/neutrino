@@ -29,7 +29,7 @@
     },
 
     "scripts":{
-        "test":"nodeunit tests"
+        "test":"node node_modules/nodeunit/bin/nodeunit tests --reporter ../../../tests/reporter/default.js"
     },
 
     "licenses":[
