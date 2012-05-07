@@ -29,7 +29,12 @@
  */
 
 var neutrino = require('../index.js'),
-    config = new neutrino.core.Config(),
+    config = new neutrino.core.Config({
+        sessions:{
+            expiredTimeout:100,
+            checkExpiredInterval:200
+        }
+    }),
     randomValue = Math.random(),
     createdSessionId,
     sessionManager1 = new neutrino.security.SessionManager(config),
@@ -85,4 +90,32 @@ exports['Remove session'] = function (test) {
             test.done();
         });
     });
+};
+
+exports['Expired session get'] = function (test) {
+
+    test.expect(5);
+
+    var toAdd = {
+            user:'test2',
+            key:randomValue
+        },
+        expiredSessionId;
+
+
+    sessionManager1.create(toAdd, function (error, object, sessionId) {
+        test.ifError(error);
+        test.deepEqual(object.user, 'test2');
+        test.deepEqual(object.key, randomValue);
+        expiredSessionId = sessionId;
+    });
+
+    setTimeout(function () {
+        sessionManager2.$(expiredSessionId, function (error, object) {
+            test.ifError(error);
+            test.deepEqual(object, null);
+            test.done();
+        });
+
+    }, config.$('sessions').checkExpiredInterval + 100);
 };

@@ -37,8 +37,9 @@
     },
 
     "sessions":{
-        "sessionCollectionName":"sessions",
-        "sessionExpiredMinutes":60
+        "collectionName":"sessions",
+        "expiredTimeout":3600000,
+        "checkExpiredInterval":300000
     },
 
     "logger":{

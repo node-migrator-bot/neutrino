@@ -43,15 +43,16 @@ function SessionManager(config) {
 
     events.EventEmitter.call(self);
 
-    self.sessionCollectionName_ = sessionConfig.sessionCollectionName || self.sessionCollectionName_;
-    self.sessionExpiredMinutes_ = sessionConfig.sessionExpiredMinutes_ || self.sessionExpiredMinutes_;
+    self.collectionName_ = sessionConfig.collectionName || self.collectionName_;
+    self.expiredTimeout_ = sessionConfig.expiredTimeout || self.expiredTimeout_;
+    self.checkExpiredInterval_ = sessionConfig.checkExpiredInterval || self.checkExpiredInterval_;
 
     self.dbProvider_ = new neutrino.io.DbProvider(config);
     self.dbProvider_.on('error', function (error) {
         self.emit('error', error);
     });
 
-    self.dbProvider_.getCollection(self.sessionCollectionName_, function (collection) {
+    self.dbProvider_.getCollection(self.collectionName_, function (collection) {
         self.storage_ = collection;
         self.emit('storageReady');
     });
@@ -59,6 +60,10 @@ function SessionManager(config) {
     self.on('storageReady', function () {
         self.isStorageReady = true;
     });
+
+    setInterval(function () {
+        self.checkExpired();
+    }, self.checkExpiredInterval_);
 }
 
 /**
@@ -72,14 +77,21 @@ SessionManager.prototype.isStorageReady = false;
  * @type {String}
  * @private
  */
-SessionManager.prototype.sessionCollectionName_ = neutrino.defaults.sessions.sessionCollectionName;
+SessionManager.prototype.collectionName_ = neutrino.defaults.sessions.collectionName;
 
 /**
  * Count of minutes before session will be destroyed.
  * @type {Number}
  * @private
  */
-SessionManager.prototype.sessionExpiredMinutes_ = neutrino.defaults.sessions.sessionExpiredMinutes;
+SessionManager.prototype.expiredTimeout_ = neutrino.defaults.sessions.expiredTimeout;
+
+/**
+ * Interval in milliseconds to collect garbage in session storage.
+ * @type {Number}
+ * @private
+ */
+SessionManager.prototype.checkExpiredInterval_ = neutrino.defaults.sessions.checkExpiredInterval;
 
 /**
  * Database provider object.
@@ -104,7 +116,10 @@ SessionManager.prototype.storage_ = null;
 SessionManager.prototype.create = function (sessionObject, callback) {
 
     var self = this,
+        now = new Date(),
+        expiredDate = now.setMilliseconds(now.getMilliseconds() + self.expiredTimeout_),
         execute = function () {
+            sessionObject.expired = expiredDate;
             self.storage_.insert(sessionObject, {safe:true}, function (error, objects) {
 
                 if (error) {
@@ -193,7 +208,11 @@ SessionManager.prototype.get = function (sessionId, callback) {
 SessionManager.prototype.set = function (sessionId, setParameters, callback) {
 
     var self = this,
+        now = new Date(),
+        expiredDate = now.setMilliseconds(now.getMilliseconds() + self.expiredTimeout_),
         execute = function () {
+
+            setParameters.expired = expiredDate;
 
             var id = mongodb.ObjectID.createFromHexString(sessionId);
             self.storage_.findAndModify({_id:id}, [
@@ -233,4 +252,23 @@ SessionManager.prototype.$ = function (sessionId, callback, setParameters) {
     }
 
     self.set(sessionId, setParameters, callback);
+};
+
+/**
+ * Remove expired sessions from storage.
+ */
+SessionManager.prototype.checkExpired = function () {
+
+    var self = this,
+        now = new Date(),
+        execute = function () {
+            self.storage_.remove({'expired':{$lte:now.getTime()}})
+        };
+
+    if (self.isStorageReady) {
+        execute();
+    } else {
+        self.once('storageReady', execute);
+    }
+
 };
