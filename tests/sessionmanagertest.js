@@ -38,6 +38,7 @@ exports.sessionManagerTest = function (test) {
         sessionManager1 = new neutrino.security.SessionManager(config),
         sessionManager2 = new neutrino.security.SessionManager(config);
 
+    test.expect(15);
 
     startTest();
 

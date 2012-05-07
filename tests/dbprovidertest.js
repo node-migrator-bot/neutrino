@@ -33,6 +33,7 @@ exports.dbProviderTest = function (test) {
         config = new neutrino.core.Config(),
         dbProvider = new neutrino.io.DbProvider(config);
 
+    test.expect(8);
     startTests();
 
     function startTests() {
