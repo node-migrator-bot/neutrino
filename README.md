@@ -1,4 +1,4 @@
-#neutrino - framework for distributed web-service development.
+#neutrino - framework for distributed web-service development.[![Build Status](https://secure.travis-ci.org/DenisRechkunov/neutrino.png)](http://travis-ci.org/DenisRechkunov/neutrino)
 
 ##Description
 
