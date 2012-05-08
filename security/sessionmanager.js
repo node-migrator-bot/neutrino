@@ -58,7 +58,7 @@ function SessionManager(config) {
     });
 
     self.on('storageReady', function () {
-        self.isStorageReady = true;
+        self.isStorageReady_ = true;
     });
 
     setInterval(function () {
@@ -70,7 +70,7 @@ function SessionManager(config) {
  * Is session storage ready.
  * @type {Boolean}
  */
-SessionManager.prototype.isStorageReady = false;
+SessionManager.prototype.isStorageReady_ = false;
 
 /**
  * Name of session storage in database.
@@ -133,7 +133,7 @@ SessionManager.prototype.create = function (sessionObject, callback) {
             });
         };
 
-    if (self.isStorageReady) {
+    if (self.isStorageReady_) {
         execute();
     } else {
         self.once('storageReady', execute);
@@ -163,7 +163,7 @@ SessionManager.prototype.remove = function (sessionId, callback) {
             });
         };
 
-    if (self.isStorageReady) {
+    if (self.isStorageReady_) {
         execute();
     } else {
         self.once('storageReady', execute);
@@ -192,7 +192,7 @@ SessionManager.prototype.get = function (sessionId, callback) {
             });
         };
 
-    if (self.isStorageReady) {
+    if (self.isStorageReady_) {
         execute();
     } else {
         self.once('storageReady', execute);
@@ -230,7 +230,7 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
 
         };
 
-    if (self.isStorageReady) {
+    if (self.isStorageReady_) {
         execute();
     } else {
         self.once('storageReady', execute);
@@ -265,7 +265,7 @@ SessionManager.prototype.checkExpired = function () {
             self.storage_.remove({'expired':{$lte:now.getTime()}})
         };
 
-    if (self.isStorageReady) {
+    if (self.isStorageReady_) {
         execute();
     } else {
         self.once('storageReady', execute);

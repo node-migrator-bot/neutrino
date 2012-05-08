@@ -154,6 +154,8 @@ Worker.prototype.start = function () {
  */
 Worker.prototype.messageHandler_ = function (messageObject) {
 
+    var self = this;
+
     if (!messageObject || !messageObject.type) {
         return;
     }

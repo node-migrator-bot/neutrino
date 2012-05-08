@@ -29,19 +29,42 @@
  */
 
 var neutrino = require('../../index.js');
-neutrino.currentConfig = config = new neutrino.core.Config({
-    mvc:{
-        modelsFolder_:"./tests/models"
+neutrino.currentConfig = config = new neutrino.core.Config();
+neutrino.init_();
+neutrino.logger = {
+    trace:function () {
+    },
+    error:function () {
+    },
+    debug:function () {
+    },
+    warn:function () {
     }
-});
+};
+dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
 
-var master = new neutrino.cluster.Master(neutrino.currentConfig),
-    worker1 = new neutrino.cluster.Worker(neutrino.currentConfig),
-    worker2 = new neutrino.cluster.Worker(neutrino.currentConfig);
+exports['Model synchronization engine and change event'] = function (test) {
 
-exports['Model synchronization engine'] = function (test) {
+    var config = new neutrino.core.Config({
+            "eventBus":{
+                "serverPort":50777
+            },
+            mvc:{
+                modelsCollectionName:'testModels1',
+                modelsFolder_:"./tests/models"
+            }
+        }),
+        master = new neutrino.cluster.Master(config),
+        worker1 = new neutrino.cluster.Worker(config),
+        worker2 = new neutrino.cluster.Worker(config),
+        loaded = 0;
 
-    var loaded = 0;
+    master.start();
+    worker1.start();
+    worker2.start();
+
+    test.expect(6);
+
     worker1.logicSet_.on('modelLoaded', function () {
         loaded++;
         startTest();
@@ -53,6 +76,7 @@ exports['Model synchronization engine'] = function (test) {
     });
 
     function startTest() {
+
         if (loaded !== 2) {
             return;
         }
@@ -60,12 +84,68 @@ exports['Model synchronization engine'] = function (test) {
         test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue');
         test.deepEqual(worker2.logicSet_.models_['test'].test.$(), 'testValue');
 
+        worker2.logicSet_.models_['test'].on('changed', function (propertyName, oldValue, newValue) {
+
+            test.deepEqual(propertyName, 'test');
+            test.deepEqual(oldValue, 'testValue');
+            test.deepEqual(newValue, 'testValue2');
+
+            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+                collection.drop();
+                test.done();
+            });
+        });
+
         worker1.logicSet_.models_['test'].test.$('testValue2');
         test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue2');
-        setTimeout(function () {
-            test.deepEqual(worker2.logicSet_.models_['test'].test.$(), 'testValue2');
-        }, 100);
-        test.done();
+
     }
+
+};
+
+exports['Model state saving and recovery'] = function (test) {
+
+    var config = new neutrino.core.Config({
+            "eventBus":{
+                "serverPort":50779
+            },
+            mvc:{
+                modelsCollectionName:'testModels2',
+                modelsFolder_:"./tests/models"
+            }
+        }),
+        master = new neutrino.cluster.Master(config),
+        worker1 = new neutrino.cluster.Worker(config);
+
+    master.start();
+    worker1.start();
+
+    test.expect(4);
+
+    worker1.logicSet_.on('modelLoaded', function () {
+
+        test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue');
+
+        worker1.logicSet_.models_['test'].test.$('testValue3');
+
+        worker1.logicSet_.models_['test'].on('propertySaved', function (propertyName, newValue) {
+
+            test.deepEqual(propertyName, 'test');
+            test.deepEqual(newValue, 'testValue3');
+
+            var newWorker = new neutrino.cluster.Worker(config);
+            newWorker.start();
+
+            newWorker.logicSet_.on('modelLoaded', function () {
+                test.deepEqual(newWorker.logicSet_.models_['test'].test.$(), 'testValue3');
+                dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+                    collection.drop();
+                    test.done();
+                });
+            });
+        });
+
+    });
+
 
 };

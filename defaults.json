@@ -23,6 +23,7 @@
     },
 
     "mvc":{
+        "modelsCollectionName":"models",
         "modelsFolder_":"./models",
         "controllersFolder_":"./controllers",
         "viewsFolder_":"./views"

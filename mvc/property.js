@@ -73,9 +73,13 @@ Property.prototype.set = function (newValue, observable) {
     var self = this,
         oldValue = self.value_;
 
+    if (newValue === oldValue) {
+        return;
+    }
+
     self.value_ = newValue;
 
-    if (observable === undefined || observable) {
+    if (observable === undefined || observable === true) {
         self.emit('changed', self.name_, oldValue, newValue);
     }
 };
