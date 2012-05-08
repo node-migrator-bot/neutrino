@@ -30,6 +30,7 @@
 module.exports = Master;
 
 var util = require('util'),
+    path = require('path'),
     http = require('http');
 
 /**
@@ -42,15 +43,20 @@ function Master(config) {
     var self = this,
         masterConfig = config.$('master') || {};
 
+    self.config_ = config;
+    self.eventServicesFolder_ = masterConfig.eventServicesFolder || self.eventServicesFolder_;
     self.eventBusServer_ = new neutrino.cluster.EventBusServer(config);
     self.balancer_ = new neutrino.cluster.Balancer();
     self.httpServer_ = http.createServer(function (request, response) {
-        response.end(self.getFreeWorker());
+        var workerInfo = self.getFreeWorker(),
+            json = JSON.stringify(workerInfo);
+        response.end(json);
     });
 
     self.httpServerPort_ = masterConfig.httpPort || self.httpServerPort_;
 
     self.workers_ = {};
+    self.eventServices_ = {};
 
     self.eventBusServer_.on('serviceMessage', function (messageObject) {
         neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
@@ -62,14 +68,23 @@ function Master(config) {
 
     self.eventBusServer_.on('workerConnected', function (workerId) {
         self.balancer_.addWorker(workerId);
-        self.workers_[workerId] = '';
+        self.workers_[workerId] = {};
     });
 
     self.eventBusServer_.on('workerDisconnected', function (workerId) {
         self.balancer_.removeWorker(workerId);
         delete self.workers_[workerId];
     });
+
+    self.initEventServices_();
 }
+
+/**
+ * Current config object.
+ * @type {neutrino.core.Config}
+ * @private
+ */
+Master.prototype.config_ = null;
 
 /**
  * EBS server for cluster communication.
@@ -92,6 +107,7 @@ Master.prototype.balancer_ = null;
  */
 Master.prototype.workers_ = null;
 
+//noinspection JSValidateJSDoc
 /**
  * HTTP server for client application asking for free node.
  * @type {http.Server}
@@ -105,6 +121,20 @@ Master.prototype.httpServer_ = null;
  * @private
  */
 Master.prototype.httpServerPort_ = neutrino.defaults.master.httpPort;
+
+/**
+ * Current event services folder.
+ * @type {String}
+ * @private
+ */
+Master.prototype.eventServicesFolder_ = neutrino.defaults.master.eventServicesFolder;
+
+/**
+ * Current event services hash table.
+ * @type {Object}
+ * @private
+ */
+Master.prototype.eventServices_ = null;
 
 /**
  * Start cluster master.
@@ -150,6 +180,7 @@ Master.prototype.messageHandler_ = function (messageObject, workerId) {
     self[handlerName](messageObject, workerId);
 };
 
+//noinspection JSUnusedGlobalSymbols
 /**
  * Handle worker address message.
  * @param {Object} messageObject Incoming message object.
@@ -163,19 +194,20 @@ Master.prototype.addressHandler_ = function (messageObject, workerId) {
 
 };
 
+//noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 /**
  * Handle workers sync message.
  * @param {Object} messageObject Incoming message object.
- * @param {String} workerId Message sender ID.
  * @private
  */
-Master.prototype.syncHandler_ = function (messageObject, workerId) {
+Master.prototype.syncHandler_ = function (messageObject) {
 
     var self = this;
     self.eventBusServer_.sendToWorker(messageObject);
 
 };
 
+//noinspection JSUnusedGlobalSymbols
 /**
  * Handle worker load message. Worker sends its load estimation.
  * @param {Object} messageObject Incoming message object.
@@ -186,5 +218,44 @@ Master.prototype.loadHandler_ = function (messageObject, workerId) {
 
     var self = this;
     self.balancer_.setWeight(workerId, messageObject.value);
+
+};
+
+/**
+ * Init all events services of master node.
+ * @private
+ */
+Master.prototype.initEventServices_ = function () {
+
+    var self = this;
+
+    fs.readdir(self.eventServicesFolder_, function (error, files) {
+
+        if (error) {
+            throw new Error('Event services folder "' + self.eventServicesFolder_ + '" was not found!');
+        }
+
+        files.forEach(function (file) {
+
+            if (path.extname(file) !== '.js') {
+                return;
+            }
+
+            var servicePath = path.resolve(util.format('%s/%s', self.eventServicesFolder_, file)),
+                serviceName = path.basename(file, '.js'),
+                Service = require(servicePath),
+                service = new Service(self.config_);
+
+            service.on('data', function (data) {
+                self.eventBusServer_.sendToWorker({
+                    type:'data',
+                    value:data
+                }, self.balancer_.getWorker());
+            });
+
+            self.eventServices_[serviceName] = service;
+
+        });
+    });
 
 };

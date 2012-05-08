@@ -62,6 +62,13 @@ function Worker(config) {
         self.messageHandler_(messageObject);
     });
 
+    self.eventBusClient_.on('connected', function () {
+
+        self.addressUpdate_();
+        self.loadEstimationUpdate_();
+
+    });
+
     self.loadEstimationUpdateInterval_ = setInterval(function () {
         self.loadEstimationUpdate_();
     }, self.loadSendInterval_);
@@ -135,16 +142,27 @@ Worker.prototype.loadEstimationUpdate_ = function () {
 };
 
 /**
- * Start new worker node.
+ * Send load estimation to master.
+ * @private
  */
-Worker.prototype.start = function () {
+Worker.prototype.addressUpdate_ = function () {
+
     var self = this;
-    self.eventBusClient_.connect();
 
     self.eventBusClient_.sendToMaster({
         type:'address',
-        value:util.format('%s:%d', self.host_, self.port_)
+        value:{host:self.host_, port:self.port_}
     });
+
+};
+
+/**
+ * Start new worker node.
+ */
+Worker.prototype.start = function () {
+
+    var self = this;
+    self.eventBusClient_.connect();
 
 };
 

@@ -215,6 +215,10 @@ LogicSet.prototype.initModels_ = function () {
 
         files.forEach(function (file) {
 
+            if (path.extname(file) !== '.js') {
+                return;
+            }
+
             //noinspection UnnecessaryLocalVariableJS
             var modelPath = path.resolve(util.format('%s/%s', self.modelsFolder_, file)),
                 controllerPath = path.resolve(util.format('%s/%s', self.controllersFolder_, file)),

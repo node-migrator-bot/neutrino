@@ -7,6 +7,7 @@
           <resourceRoots>
             <path value="file://$PROJECT_DIR$/tests/models" />
             <path value="file://$PROJECT_DIR$/tests/reporter" />
+            <path value="file://$PROJECT_DIR$/tests/services" />
           </resourceRoots>
         </entryData>
       </entry>

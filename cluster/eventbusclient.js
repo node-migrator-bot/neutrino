@@ -203,6 +203,8 @@ EventBusClient.prototype.connectionHandler_ = function () {
         message:'Connection established'
     });
 
+    self.emit('connected');
+
     var messageToSend = self.messageQueue_;
     self.messageQueue_ = [];
 

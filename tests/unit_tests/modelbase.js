@@ -150,3 +150,40 @@ exports['Model state saving and recovery'] = function (test) {
     });
 
 };
+
+exports['Receive incoming data from event service'] = function (test) {
+
+    var config = new neutrino.core.Config({
+            "eventBus":{
+                "serverPort":8083
+            },
+            "master":{
+                "httpPort":8084,
+                "eventServicesFolder":"./tests/services"
+            },
+            mvc:{
+                modelsCollectionName:'testModels3',
+                modelsFolder:"./tests/models"
+            }
+        }),
+        master = new neutrino.cluster.Master(config),
+        worker1 = new neutrino.cluster.Worker(config);
+
+    master.start();
+    worker1.start();
+
+    test.expect(1);
+
+    worker1.logicSet_.on('modelLoaded', function () {
+        worker1.logicSet_.models_['test'].on('data', function (data) {
+
+            test.deepEqual(data.message, 'testMessage');
+
+            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+                collection.drop();
+                test.done();
+            });
+        });
+    });
+
+};
