@@ -54,6 +54,7 @@ function EventBusClient(config) {
     self.workerSecret_ = eventBusConfig.workerSecret || self.workerSecret_;
     self.serverHost_ = eventBusConfig.serverAddress || self.serverHost_;
     self.serverPort_ = eventBusConfig.serverPort || self.serverPort_;
+    self.messageQueue_ = [];
     self.serverAddressString_ = util.format('%s:%d',
         self.serverHost_,
         self.serverPort_);
@@ -80,7 +81,7 @@ EventBusClient.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret
  * @type {Array}
  * @private
  */
-EventBusClient.prototype.messageQueue_ = [];
+EventBusClient.prototype.messageQueue_ = null;
 
 /**
  * Current charset.
@@ -124,6 +125,7 @@ EventBusClient.prototype.reconnectInterval_ = neutrino.defaults.eventBus.reconne
  */
 EventBusClient.prototype.isConnected_ = false;
 
+//noinspection JSValidateJSDoc
 /**
  * TCP socket object.
  * @type {net.Socket}

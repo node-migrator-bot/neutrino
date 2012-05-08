@@ -29,7 +29,8 @@
  */
 
 var neutrino = require('../../index.js');
-neutrino.currentConfig = config = new neutrino.core.Config();
+
+neutrino.currentConfig = new neutrino.core.Config();
 neutrino.init_();
 neutrino.logger = {
     trace:function () {
@@ -41,17 +42,18 @@ neutrino.logger = {
     warn:function () {
     }
 };
-dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
+
+var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
 
 exports['Model synchronization engine and change event'] = function (test) {
 
     var config = new neutrino.core.Config({
             "eventBus":{
-                "serverPort":50777
+                "serverPort":8081
             },
             mvc:{
                 modelsCollectionName:'testModels1',
-                modelsFolder_:"./tests/models"
+                modelsFolder:"./tests/models"
             }
         }),
         master = new neutrino.cluster.Master(config),
@@ -107,11 +109,11 @@ exports['Model state saving and recovery'] = function (test) {
 
     var config = new neutrino.core.Config({
             "eventBus":{
-                "serverPort":50779
+                "serverPort":8082
             },
             mvc:{
                 modelsCollectionName:'testModels2',
-                modelsFolder_:"./tests/models"
+                modelsFolder:"./tests/models"
             }
         }),
         master = new neutrino.cluster.Master(config),
@@ -146,6 +148,5 @@ exports['Model state saving and recovery'] = function (test) {
         });
 
     });
-
 
 };

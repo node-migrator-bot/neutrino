@@ -24,9 +24,9 @@
 
     "mvc":{
         "modelsCollectionName":"models",
-        "modelsFolder_":"./models",
+        "modelsFolder":"./models",
         "controllersFolder_":"./controllers",
-        "viewsFolder_":"./views"
+        "viewsFolder":"./views"
     },
 
     "eventBus":{

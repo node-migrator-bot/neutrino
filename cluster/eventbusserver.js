@@ -49,8 +49,10 @@ function EventBusServer(config) {
 
     self.masterSecret_ = eventBusConfig.masterSecret || self.masterSecret_;
     self.workerSecret_ = eventBusConfig.workerSecret || self.workerSecret_;
-    self.serverPort_ = eventBusConfig.serverPort_ || self.serverPort_;
+    self.serverPort_ = eventBusConfig.serverPort || self.serverPort_;
     self.charset_ = config.$('charset') || self.charset_;
+    self.sockets_ = [];
+    self.workers_ = {};
 
     self.server_ = net.createServer(function (socket) {
         self.incomingConnectionHandler_(socket);
@@ -87,15 +89,16 @@ EventBusServer.prototype.serverPort_ = neutrino.defaults.eventBus.serverPort;
  * @type {Array}
  * @private
  */
-EventBusServer.prototype.sockets_ = [];
+EventBusServer.prototype.sockets_ = null;
 
 /**
  * Hash table of workers sockets.
  * @type {Object}
  * @private
  */
-EventBusServer.prototype.workers_ = {};
+EventBusServer.prototype.workers_ = null;
 
+//noinspection JSValidateJSDoc
 /**
  * TCP server which EBS use to connect with EBCs;
  * @type {net.Server}
@@ -132,6 +135,7 @@ EventBusServer.prototype.start = function () {
             message:'EBS started'
         });
     });
+
 };
 
 /**
@@ -145,6 +149,7 @@ EventBusServer.prototype.sendToWorker = function (messageObject, workerId) {
     self.emit('messageFromMaster', messageObject, workerId);
 };
 
+//noinspection JSValidateJSDoc
 /**
  * Process incoming connection.
  * @param {net.Socket} socket Incoming connection socket.
@@ -185,6 +190,7 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
     self.emit('workerConnected', workerId);
 };
 
+//noinspection JSValidateJSDoc
 /**
  * Process message from worker and send to master.
  * @param {net.Socket} socket Connected socket.
@@ -272,6 +278,7 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
     }
 };
 
+//noinspection JSValidateJSDoc
 /**
  * Generate worker ID by it's socket information.
  * @param {net.Socket} socket Worker socket object.
@@ -283,6 +290,7 @@ EventBusServer.prototype.generateWorkerId_ = function (socket) {
     return util.format('%s:%d', socket.remoteAddress, socket.remotePort);
 };
 
+//noinspection JSValidateJSDoc
 /**
  * Remove socket from EBS list.
  * @param {net.Socket} socket Connected socket.

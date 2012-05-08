@@ -53,9 +53,9 @@ function LogicSet(config, worker) {
     self.worker_ = worker;
     self.config_ = config;
 
-    self.modelsFolder_ = mvcConfig.modelsFolder_ || self.modelsFolder_;
-    self.controllersFolder_ = mvcConfig.controllersFolder_ || self.controllersFolder_;
-    self.viewsFolder_ = mvcConfig.viewsFolder_ || self.viewsFolder_;
+    self.modelsFolder_ = mvcConfig.modelsFolder || self.modelsFolder_;
+    self.controllersFolder_ = mvcConfig.controllersFolder || self.controllersFolder_;
+    self.viewsFolder_ = mvcConfig.viewsFolder || self.viewsFolder_;
 
     self.bridge_ = new neutrino.mvc.ViewBridge(config);
 
@@ -117,21 +117,21 @@ LogicSet.prototype.bridge_ = null;
  * @type {String}
  * @private
  */
-LogicSet.prototype.modelsFolder_ = neutrino.defaults.mvc.modelsFolder_;
+LogicSet.prototype.modelsFolder_ = neutrino.defaults.mvc.modelsFolder;
 
 /**
  * Current controllers folder.
  * @type {String}
  * @private
  */
-LogicSet.prototype.controllersFolder_ = neutrino.defaults.mvc.controllersFolder_;
+LogicSet.prototype.controllersFolder_ = neutrino.defaults.mvc.controllersFolder;
 
 /**
  * Current view folder.
  * @type {String}
  * @private
  */
-LogicSet.prototype.viewsFolder_ = neutrino.defaults.mvc.viewsFolder_;
+LogicSet.prototype.viewsFolder_ = neutrino.defaults.mvc.viewsFolder;
 
 /**
  * Hash table of models.
@@ -242,6 +242,13 @@ LogicSet.prototype.initModels_ = function () {
                 view = new viewConstructor(self.config_, modelName),
                 controller = new controllerConstructor(self.config_, modelName, model, view);
 
+            model.on('modelLoaded', function () {
+                self.emit('modelLoaded', {
+                    name:modelName,
+                    path:modelPath
+                });
+            });
+
             model.on('sendSync', function (message) {
                 self.worker_.sendSyncMessage(message);
             });
@@ -251,11 +258,6 @@ LogicSet.prototype.initModels_ = function () {
             self.views_[modelName] = view;
 
             self.linkView_(modelName);
-
-            self.emit('modelLoaded', {
-                name:modelName,
-                path:modelPath
-            });
 
         });
     });
