@@ -164,38 +164,49 @@ LogicSet.prototype.linkView_ = function (viewName) {
     var self = this,
         view = self.views_[viewName];
 
-    view.on('showError', function (errorMessage, sessionId) {
-        self.bridge_.sendError(viewName, errorMessage, sessionId);
+    view.on('showError', function (errorMessage, sessionId, requestId) {
+        self.bridge_.sendError(viewName, errorMessage, sessionId, requestId);
     });
 
-    view.on('showModel', function (model, sessionId) {
-        self.bridge_.sendModel(viewName, model, sessionId);
+    view.on('showModel', function (model, sessionId, requestId) {
+        self.bridge_.sendModel(viewName, model, sessionId, requestId);
     });
 
     view.on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
         self.bridge_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
-    self.bridge_.on('modelRequest', function (requestViewName, sessionId) {
+    view.on('invokeResult', function (methodName, result, sessionId, requestId) {
+        self.bridge_.sendInvokeResult(viewName, methodName, result, sessionId, requestId);
+    });
+
+    self.bridge_.on('modelRequest', function (requestViewName, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
-        view.getModel(sessionId);
+        view.getModel(sessionId, requestId);
     });
 
-    self.bridge_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId) {
+    self.bridge_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
-        view.edit(propertyName, newValue, sessionId);
+        view.setValue(propertyName, newValue, sessionId, requestId);
     });
 
-    self.bridge_.on('subscribe', function (sessionId) {
-        view.subscribe(sessionId);
+    self.bridge_.on('invokeRequest', function (requestViewName, methodName, args, sessionId, requestId) {
+        if (requestViewName !== viewName) {
+            return;
+        }
+        view.invoke(methodName, args, sessionId, requestId);
     });
 
-    self.bridge_.on('unsubscribe', function (sessionId) {
-        view.unsubscribe(sessionId);
+    self.bridge_.on('subscribe', function (sessionId, requestId) {
+        view.subscribe(sessionId, requestId);
+    });
+
+    self.bridge_.on('unsubscribe', function (sessionId, requestId) {
+        view.unsubscribe(sessionId, requestId);
     });
 };
 

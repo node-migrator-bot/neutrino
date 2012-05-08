@@ -9,3 +9,13 @@ function Test(config) {
         test:'testValue'
     });
 }
+
+//noinspection JSUnusedGlobalSymbols
+Test.prototype.testMethod = function (callback, returnValue) {
+    callback(returnValue);
+};
+
+//noinspection JSUnusedGlobalSymbols
+Test.prototype.privateTest_ = function (callback, returnValue) {
+    callback(returnValue);
+};

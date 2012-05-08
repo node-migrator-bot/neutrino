@@ -34,6 +34,7 @@ var util = require('util'),
 
 util.inherits(ViewBridge, events.EventEmitter);
 
+//noinspection JSUnusedLocalSymbols
 /**
  * Create new instance of server view - client view bridge.
  * @param {neutrino.core.Config} config Neutrino config object.
@@ -46,34 +47,50 @@ function ViewBridge(config) {
     events.EventEmitter.call(self);
 }
 
+//noinspection JSUnusedLocalSymbols
 /**
  * Send model object to client.
  * @param {String} viewName View title.
  * @param {Object} model Model object.
- * @param {Object} sessionObject User session object.
+ * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendModel = function (viewName, model, sessionObject) {
+ViewBridge.prototype.sendModel = function (viewName, model, sessionId) {
 
 };
 
+//noinspection JSUnusedLocalSymbols
 /**
  * Send error message to client.
  * @param {String} viewName View title.
  * @param {String} errorMessage Error text message.
- * @param {Object} sessionObject User session object.
+ * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionObject) {
+ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
 
 };
 
+//noinspection JSUnusedLocalSymbols
 /**
  * Send new value for client view.
  * @param {String} viewName View title.
  * @param {String} propertyName Changed property name.
  * @param {*} oldValue Old property value.
  * @param {*} newValue New property value.
- * @param {Object} sessionObject User session object.
+ * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionObject) {
+ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionId) {
+
+};
+
+//noinspection JSUnusedLocalSymbols
+/**
+ * Send invoke result to client view.
+ * @param {String} viewName View title.
+ * @param {String} methodName Name of invoked method.
+ * @param {*} result Result of method invoke.
+ * @param {String} sessionId User session ID.
+ * @param {String} requestId User request ID.
+ */
+ViewBridge.prototype.sendInvokeResult = function (viewName, methodName, result, sessionId, requestId) {
 
 };
