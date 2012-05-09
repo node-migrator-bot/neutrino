@@ -29,9 +29,8 @@
  */
 
 var neutrino = require('../../index.js');
+neutrino.configure();
 
-neutrino.currentConfig = new neutrino.core.Config();
-neutrino.init_();
 neutrino.logger = {
     trace:function () {
     },
@@ -49,13 +48,11 @@ var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig),
             "serverPort":8085
         }
     }),
-    master = new neutrino.cluster.Master(masterConfig);
-
-master.start();
+    master = new neutrino.createMaster(masterConfig);
 
 exports['Get model'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    var config = {
             "eventBus":{
                 "serverPort":8085
             },
@@ -63,11 +60,9 @@ exports['Get model'] = function (test) {
                 modelsCollectionName:'testModelsViewTest1',
                 modelsFolder:"./tests/models"
             }
-        }),
-        worker = new neutrino.cluster.Worker(config),
+        },
+        worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
-
-    worker.start();
 
     test.expect(3);
     logicSet.on('modelLoaded', function () {
@@ -85,7 +80,7 @@ exports['Get model'] = function (test) {
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
 
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });
@@ -96,7 +91,7 @@ exports['Get model'] = function (test) {
 
 exports['Set value and receive update'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    var config = {
             "eventBus":{
                 "serverPort":8085
             },
@@ -104,11 +99,9 @@ exports['Set value and receive update'] = function (test) {
                 modelsCollectionName:'testModelsViewTest2',
                 modelsFolder:"./tests/models"
             }
-        }),
-        worker = new neutrino.cluster.Worker(config),
+        },
+        worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
-
-    worker.start();
 
     test.expect(5);
     logicSet.on('modelLoaded', function () {
@@ -128,7 +121,7 @@ exports['Set value and receive update'] = function (test) {
             test.deepEqual(newValue, 'newTestValue');
             test.deepEqual(sessionId, mySessionId);
 
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });
@@ -140,7 +133,7 @@ exports['Set value and receive update'] = function (test) {
 
 exports['Invoke method and receive a result'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    var config = {
             "eventBus":{
                 "serverPort":8085
             },
@@ -148,10 +141,9 @@ exports['Invoke method and receive a result'] = function (test) {
                 modelsCollectionName:'testModelsViewTest3',
                 modelsFolder:"./tests/models"
             }
-        }),
-        worker = new neutrino.cluster.Worker(config),
+        },
+        worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
-    worker.start();
 
     test.expect(4);
     logicSet.on('modelLoaded', function () {
@@ -170,7 +162,7 @@ exports['Invoke method and receive a result'] = function (test) {
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
 
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });
@@ -183,7 +175,7 @@ exports['Invoke method and receive a result'] = function (test) {
 
 exports['Get private property error delivery'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    var config = {
             "eventBus":{
                 "serverPort":8085
             },
@@ -191,11 +183,9 @@ exports['Get private property error delivery'] = function (test) {
                 modelsCollectionName:'testModelsViewTest4',
                 modelsFolder:"./tests/models"
             }
-        }),
-        worker = new neutrino.cluster.Worker(config),
+        },
+        worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
-
-    worker.start();
 
     test.expect(1);
     logicSet.on('modelLoaded', function () {
@@ -205,7 +195,7 @@ exports['Get private property error delivery'] = function (test) {
 
         logicSet.views_['test'].on('showError', function (error) {
             test.deepEqual(error, 'Can not invoke private methods');
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });

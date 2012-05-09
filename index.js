@@ -64,36 +64,56 @@ neutrino.security.AuthProvider = require('./security/authprovider.js');
 neutrino.security.SessionManager = require('./security/sessionmanager.js');
 neutrino.security.Logger = require('./security/logger.js');
 
-neutrino.init_ = function () {
+process.on('uncaughtException', function (error) {
+    try {
+        neutrino.logger.error(error);
+    } catch (e) {
+
+    }
+});
+
+/**
+ * Configure neutrino for specified config object or file path.
+ * @param {String|Object} config Config obejct of file path.
+ */
+neutrino.configure = function (config) {
+
+    neutrino.currentConfig = config ? new neutrino.core.Config(config) : new neutrino.core.Config();
 
     neutrino.logger = new neutrino.security.Logger(neutrino.currentConfig);
-    process.on('uncaughtException', function (error) {
-        neutrino.logger.error(error);
-    });
+
+    if (neutrino.sessionManager) {
+        neutrino.sessionManager.stopCheckExpireInterval();
+    }
 
     neutrino.sessionManager = new neutrino.security.SessionManager(neutrino.currentConfig);
 
 };
 
-neutrino.start_ = function (configPath, isMaster) {
+/**
+ * Create and start new neutrino master node instance.
+ * @param {Object} config Configuration object (Optional).
+ * @return {neutrino.cluster.Master}
+ */
+neutrino.createMaster = function (config) {
 
-    neutrino.currentConfig = new neutrino.core.Config(configPath);
+    var launchConfig = config ? new neutrino.core.Config(config) : neutrino.currentConfig,
+        master = new neutrino.cluster.Master(launchConfig);
+    master.start();
+    return master;
 
-    neutrino.init_();
-
-    if (isMaster) {
-        neutrino.master = new neutrino.cluster.Master(neutrino.currentConfig);
-        neutrino.master.start();
-    } else {
-        neutrino.worker = new neutrino.cluster.Worker(neutrino.currentConfig);
-        neutrino.worker.start();
-    }
 };
 
-neutrino.startMaster = function (configPath) {
-    neutrino.start_(configPath, true);
-};
+/**
+ * Create and start new neutrino worker node instance.
+ * @param {Object} config Configuration object (Optional).
+ * @return {neutrino.cluster.Worker}
+ */
+neutrino.createWorker = function (config) {
 
-neutrino.startWorker = function (configPath) {
-    neutrino.start_(configPath, false);
+    var launchConfig = config ? new neutrino.core.Config(config) : neutrino.currentConfig,
+        worker = new neutrino.cluster.Worker(launchConfig);
+    worker.start();
+    return worker;
+
 };

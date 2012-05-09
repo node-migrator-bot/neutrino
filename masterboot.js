@@ -32,5 +32,7 @@
 
     var configPath = process.argv.length > 2 ? process.argv[2] : undefined;
     var neutrino = require('./index.js');
-    neutrino.startMaster(configPath);
+
+    neutrino.configure(configPath);
+    neutrino.createMaster();
 })();

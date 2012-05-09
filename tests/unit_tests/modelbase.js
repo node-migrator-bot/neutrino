@@ -29,9 +29,8 @@
  */
 
 var neutrino = require('../../index.js');
+neutrino.configure();
 
-neutrino.currentConfig = new neutrino.core.Config();
-neutrino.init_();
 neutrino.logger = {
     trace:function () {
     },
@@ -47,7 +46,8 @@ var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
 
 exports['Model synchronization engine and change event'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    //noinspection JSUnusedLocalSymbols
+    var config = {
             "eventBus":{
                 "serverPort":8081
             },
@@ -55,15 +55,11 @@ exports['Model synchronization engine and change event'] = function (test) {
                 modelsCollectionName:'testModels1',
                 modelsFolder:"./tests/models"
             }
-        }),
-        master = new neutrino.cluster.Master(config),
-        worker1 = new neutrino.cluster.Worker(config),
-        worker2 = new neutrino.cluster.Worker(config),
-        loaded = 0;
-
-    master.start();
-    worker1.start();
-    worker2.start();
+        },
+        loaded = 0,
+        master = neutrino.createMaster(config),
+        worker1 = neutrino.createWorker(config),
+        worker2 = neutrino.createWorker(config);
 
     test.expect(6);
 
@@ -82,7 +78,6 @@ exports['Model synchronization engine and change event'] = function (test) {
         if (loaded !== 2) {
             return;
         }
-
         test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue');
         test.deepEqual(worker2.logicSet_.models_['test'].test.$(), 'testValue');
 
@@ -91,8 +86,9 @@ exports['Model synchronization engine and change event'] = function (test) {
             test.deepEqual(propertyName, 'test');
             test.deepEqual(oldValue, 'testValue');
             test.deepEqual(newValue, 'testValue2');
+            console.log('start');
 
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });
@@ -107,7 +103,8 @@ exports['Model synchronization engine and change event'] = function (test) {
 
 exports['Model state saving and recovery'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    //noinspection JSUnusedLocalSymbols
+    var config = {
             "eventBus":{
                 "serverPort":8082
             },
@@ -115,12 +112,9 @@ exports['Model state saving and recovery'] = function (test) {
                 modelsCollectionName:'testModels2',
                 modelsFolder:"./tests/models"
             }
-        }),
-        master = new neutrino.cluster.Master(config),
-        worker1 = new neutrino.cluster.Worker(config);
-
-    master.start();
-    worker1.start();
+        },
+        master = neutrino.createMaster(config),
+        worker1 = neutrino.createWorker(config);
 
     test.expect(4);
 
@@ -135,12 +129,11 @@ exports['Model state saving and recovery'] = function (test) {
             test.deepEqual(propertyName, 'test');
             test.deepEqual(newValue, 'testValue3');
 
-            var newWorker = new neutrino.cluster.Worker(config);
-            newWorker.start();
+            var newWorker = neutrino.createWorker(config);
 
             newWorker.logicSet_.on('modelLoaded', function () {
                 test.deepEqual(newWorker.logicSet_.models_['test'].test.$(), 'testValue3');
-                dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+                dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                     collection.drop();
                     test.done();
                 });
@@ -153,24 +146,21 @@ exports['Model state saving and recovery'] = function (test) {
 
 exports['Receive incoming data from event service'] = function (test) {
 
-    var config = new neutrino.core.Config({
+    //noinspection JSUnusedLocalSymbols
+    var config = {
             "eventBus":{
                 "serverPort":8083
             },
             "master":{
-                "httpPort":8084,
                 "eventServicesFolder":"./tests/services"
             },
             mvc:{
                 modelsCollectionName:'testModels3',
                 modelsFolder:"./tests/models"
             }
-        }),
-        master = new neutrino.cluster.Master(config),
-        worker1 = new neutrino.cluster.Worker(config);
-
-    master.start();
-    worker1.start();
+        },
+        master = neutrino.createMaster(config),
+        worker1 = neutrino.createWorker(config);
 
     test.expect(1);
 
@@ -179,7 +169,7 @@ exports['Receive incoming data from event service'] = function (test) {
 
             test.deepEqual(data.message, 'testMessage');
 
-            dbProvider.getCollection(config.$('mvc').modelsCollectionName, function (collection) {
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });

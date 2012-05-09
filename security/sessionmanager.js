@@ -61,7 +61,7 @@ function SessionManager(config) {
         self.isStorageReady_ = true;
     });
 
-    setInterval(function () {
+    self.checExpiredIntervalHandle_ = setInterval(function () {
         self.checkExpired();
     }, self.checkExpiredInterval_);
 }
@@ -107,6 +107,8 @@ SessionManager.prototype.dbProvider_ = null;
  * @private
  */
 SessionManager.prototype.storage_ = null;
+
+SessionManager.prototype.checExpiredIntervalHandle_ = null;
 
 /**
  * Create new session for user.
@@ -271,4 +273,12 @@ SessionManager.prototype.checkExpired = function () {
         self.once('storageReady', execute);
     }
 
+};
+
+/**
+ * Stop removing expired sessions.
+ */
+SessionManager.prototype.stopCheckExpireInterval = function () {
+    var self = this;
+    clearInterval(self.checExpiredIntervalHandle_);
 };

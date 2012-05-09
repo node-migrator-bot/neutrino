@@ -28,9 +28,11 @@
  * maintained libraries.
  */
 var neutrino = require('../../index.js'),
-    randomValue = Math.random(),
-    config = new neutrino.core.Config(),
-    dbProvider = new neutrino.io.DbProvider(config);
+    randomValue = Math.random();
+
+neutrino.configure();
+
+var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
 
 exports["Create collection and insert to database"] = function (test) {
     test.expect(2);
