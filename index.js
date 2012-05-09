@@ -56,7 +56,7 @@ neutrino.mvc.privateRegExp = /^((.*_)|(_.*))$/;
 neutrino.mvc.ControllerBase = require('./mvc/controllerbase.js');
 neutrino.mvc.ModelBase = require('./mvc/modelbase.js');
 neutrino.mvc.ViewBase = require('./mvc/viewbase.js');
-neutrino.mvc.ViewBridge = require('./mvc/viewbridge.js');
+neutrino.mvc.ViewHub = require('./mvc/viewhub.js');
 neutrino.mvc.Property = require('./mvc/property.js');
 
 neutrino.security = {};

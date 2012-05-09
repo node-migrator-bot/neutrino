@@ -57,7 +57,7 @@ function LogicSet(config, worker) {
     self.controllersFolder_ = mvcConfig.controllersFolder || self.controllersFolder_;
     self.viewsFolder_ = mvcConfig.viewsFolder || self.viewsFolder_;
 
-    self.bridge_ = new neutrino.mvc.ViewBridge(config);
+    self.viewHub_ = new neutrino.mvc.ViewHub(config);
 
     self.models_ = {};
     self.controllers_ = {};
@@ -107,10 +107,10 @@ LogicSet.prototype.config_ = null;
 
 /**
  * Current server-client view bridge.
- * @type {neutrino.mvc.ViewBridge}
+ * @type {neutrino.mvc.ViewHub}
  * @private
  */
-LogicSet.prototype.bridge_ = null;
+LogicSet.prototype.viewHub_ = null;
 
 /**
  * Current models folder.
@@ -165,47 +165,47 @@ LogicSet.prototype.linkView_ = function (viewName) {
         view = self.views_[viewName];
 
     view.on('showError', function (errorMessage, sessionId, requestId) {
-        self.bridge_.sendError(viewName, errorMessage, sessionId, requestId);
+        self.viewHub_.sendError(viewName, errorMessage, sessionId, requestId);
     });
 
     view.on('showModel', function (model, sessionId, requestId) {
-        self.bridge_.sendModel(viewName, model, sessionId, requestId);
+        self.viewHub_.sendModel(viewName, model, sessionId, requestId);
     });
 
     view.on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
-        self.bridge_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
+        self.viewHub_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
     view.on('invokeResult', function (methodName, result, sessionId, requestId) {
-        self.bridge_.sendInvokeResult(viewName, methodName, result, sessionId, requestId);
+        self.viewHub_.sendInvokeResult(viewName, methodName, result, sessionId, requestId);
     });
 
-    self.bridge_.on('modelRequest', function (requestViewName, sessionId, requestId) {
+    self.viewHub_.on('modelRequest', function (requestViewName, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.getModel(sessionId, requestId);
     });
 
-    self.bridge_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId, requestId) {
+    self.viewHub_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.setValue(propertyName, newValue, sessionId, requestId);
     });
 
-    self.bridge_.on('invokeRequest', function (requestViewName, methodName, args, sessionId, requestId) {
+    self.viewHub_.on('invokeRequest', function (requestViewName, methodName, args, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.invoke(methodName, args, sessionId, requestId);
     });
 
-    self.bridge_.on('subscribe', function (sessionId, requestId) {
+    self.viewHub_.on('subscribe', function (sessionId, requestId) {
         view.subscribe(sessionId, requestId);
     });
 
-    self.bridge_.on('unsubscribe', function (sessionId, requestId) {
+    self.viewHub_.on('unsubscribe', function (sessionId, requestId) {
         view.unsubscribe(sessionId, requestId);
     });
 };

@@ -27,12 +27,12 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
-module.exports = ViewBridge;
+module.exports = ViewHub;
 
 var util = require('util'),
     events = require('events');
 
-util.inherits(ViewBridge, events.EventEmitter);
+util.inherits(ViewHub, events.EventEmitter);
 
 //noinspection JSUnusedLocalSymbols
 /**
@@ -40,7 +40,7 @@ util.inherits(ViewBridge, events.EventEmitter);
  * @param {neutrino.core.Config} config Neutrino config object.
  * @constructor
  */
-function ViewBridge(config) {
+function ViewHub(config) {
 
     var self = this;
 
@@ -54,7 +54,7 @@ function ViewBridge(config) {
  * @param {Object} model Model object.
  * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendModel = function (viewName, model, sessionId) {
+ViewHub.prototype.sendModel = function (viewName, model, sessionId) {
 
 };
 
@@ -65,7 +65,7 @@ ViewBridge.prototype.sendModel = function (viewName, model, sessionId) {
  * @param {String} errorMessage Error text message.
  * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
+ViewHub.prototype.sendError = function (viewName, errorMessage, sessionId) {
 
 };
 
@@ -78,7 +78,7 @@ ViewBridge.prototype.sendError = function (viewName, errorMessage, sessionId) {
  * @param {*} newValue New property value.
  * @param {String} sessionId User session ID.
  */
-ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionId) {
+ViewHub.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionId) {
 
 };
 
@@ -91,6 +91,6 @@ ViewBridge.prototype.sendNewValue = function (viewName, propertyName, oldValue, 
  * @param {String} sessionId User session ID.
  * @param {String} requestId User request ID.
  */
-ViewBridge.prototype.sendInvokeResult = function (viewName, methodName, result, sessionId, requestId) {
+ViewHub.prototype.sendInvokeResult = function (viewName, methodName, result, sessionId, requestId) {
 
 };
