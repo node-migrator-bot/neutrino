@@ -60,42 +60,15 @@ function ViewBase(config, name) {
 ViewBase.prototype.name = '';
 
 /**
- * Show error message on client.
- * @param {Error} error Exception object.
+ * Show request response
+ * @param {*} response Request response.
  * @param {String} sessionId User session ID.
  * @param {String} requestId User request ID.
  */
-ViewBase.prototype.showError = function (error, sessionId, requestId) {
+ViewBase.prototype.showResponse = function (response, sessionId, requestId) {
 
     var self = this;
-    self.emit('showError', error.message, sessionId, requestId);
-
-};
-
-/**
- * Show model on client.
- * @param {neutrino.mvc.ModelBase} model Model object.
- * @param {String} sessionId User session ID.
- * @param {String} requestId User request ID.
- */
-ViewBase.prototype.showModel = function (model, sessionId, requestId) {
-
-    var self = this;
-    self.emit('showModel', model, sessionId, requestId);
-
-};
-
-/**
- * Show method invoke result.
- * @param {String} methodName Model method name.
- * @param {*} result Invoked method result.
- * @param {String} sessionId User session ID.
- * @param {String} requestId User request ID.
- */
-ViewBase.prototype.invokeResult = function (methodName, result, sessionId, requestId) {
-
-    var self = this;
-    self.emit('invokeResult', methodName, result, sessionId, requestId);
+    self.emit('showResponse', response, sessionId, requestId);
 
 };
 

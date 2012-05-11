@@ -39,6 +39,9 @@ neutrino.logger = {
     debug:function () {
     },
     warn:function () {
+    },
+    info:function () {
+
     }
 };
 
@@ -59,24 +62,24 @@ exports['Get model'] = function (test) {
             mvc:{
                 modelsCollectionName:'testModelsViewTest1',
                 modelsFolder:"./tests/models"
+            },
+            worker:{
+                port:50889
             }
         },
         worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
 
-    test.expect(3);
+    test.expect(4);
     logicSet.on('modelLoaded', function () {
-
-        logicSet.views_['test'].on('showError', function (error) {
-            test.ifError(error);
-        });
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showModel', function (modelObject, sessionId, requestId) {
+        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
 
-            test.deepEqual(modelObject.test, 'testValue');
+            test.deepEqual(responseObject.success.true);
+            test.deepEqual(responseObject.model.test, 'testValue');
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
 
@@ -98,20 +101,19 @@ exports['Set value and receive update'] = function (test) {
             mvc:{
                 modelsCollectionName:'testModelsViewTest2',
                 modelsFolder:"./tests/models"
+            },
+            worker:{
+                port:50890
             }
         },
         worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
 
-    test.expect(5);
+    test.expect(8);
     logicSet.on('modelLoaded', function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
-
-        logicSet.views_['test'].on('showError', function (error) {
-            test.ifError(error);
-        });
 
         logicSet.views_['test'].on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
 
@@ -126,7 +128,12 @@ exports['Set value and receive update'] = function (test) {
                 test.done();
             });
         });
-        logicSet.views_['test'].subscribe(mySessionId, myRequestId + 1);
+        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+            test.deepEqual(responseObject.success, true);
+            test.deepEqual(sessionId, mySessionId);
+            test.deepEqual(requestId, myRequestId);
+        });
+        logicSet.views_['test'].subscribe(mySessionId, myRequestId);
         logicSet.views_['test'].setValue('test', 'newTestValue', mySessionId, myRequestId);
     });
 };
@@ -140,6 +147,9 @@ exports['Invoke method and receive a result'] = function (test) {
             mvc:{
                 modelsCollectionName:'testModelsViewTest3',
                 modelsFolder:"./tests/models"
+            },
+            worker:{
+                port:50891
             }
         },
         worker = neutrino.createWorker(config),
@@ -151,22 +161,16 @@ exports['Invoke method and receive a result'] = function (test) {
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showError', function (error) {
-            test.ifError(error);
-        });
-
-        logicSet.views_['test'].on('invokeResult', function (methodName, result, sessionId, requestId) {
-
-            test.deepEqual(methodName, 'testMethod');
-            test.deepEqual(result, 'returnedTestValue');
+        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+            test.deepEqual(responseObject.success, true);
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
+            test.deepEqual(responseObject.result, 'returnedTestValue');
 
             dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();
             });
-
         });
 
         logicSet.views_['test'].invoke('testMethod', ['returnedTestValue'], mySessionId, myRequestId);
@@ -182,19 +186,25 @@ exports['Get private property error delivery'] = function (test) {
             mvc:{
                 modelsCollectionName:'testModelsViewTest4',
                 modelsFolder:"./tests/models"
+            },
+            worker:{
+                port:50892
             }
         },
         worker = neutrino.createWorker(config),
         logicSet = worker.logicSet_;
 
-    test.expect(1);
+    test.expect(4);
     logicSet.on('modelLoaded', function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showError', function (error) {
-            test.deepEqual(error, 'Can not invoke private methods');
+        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+            test.deepEqual(requestId, myRequestId);
+            test.deepEqual(sessionId, mySessionId);
+            test.deepEqual(responseObject.success, false);
+            test.deepEqual(responseObject.error.message, 'Can not invoke private methods');
             dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();
                 test.done();

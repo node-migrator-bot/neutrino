@@ -78,7 +78,8 @@ Logger.prototype.levels_ = {
     debug:false,
     error:false,
     warn:false,
-    trace:false
+    trace:false,
+    info:false
 };
 
 /**

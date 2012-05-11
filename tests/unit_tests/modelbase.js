@@ -39,6 +39,9 @@ neutrino.logger = {
     debug:function () {
     },
     warn:function () {
+    },
+    info:function () {
+
     }
 };
 
@@ -86,7 +89,6 @@ exports['Model synchronization engine and change event'] = function (test) {
             test.deepEqual(propertyName, 'test');
             test.deepEqual(oldValue, 'testValue');
             test.deepEqual(newValue, 'testValue2');
-            console.log('start');
 
             dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                 collection.drop();

@@ -164,20 +164,12 @@ LogicSet.prototype.linkView_ = function (viewName) {
     var self = this,
         view = self.views_[viewName];
 
-    view.on('showError', function (errorMessage, sessionId, requestId) {
-        self.viewHub_.sendError(viewName, errorMessage, sessionId, requestId);
-    });
-
-    view.on('showModel', function (model, sessionId, requestId) {
-        self.viewHub_.sendModel(viewName, model, sessionId, requestId);
-    });
-
     view.on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
         self.viewHub_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
-    view.on('invokeResult', function (methodName, result, sessionId, requestId) {
-        self.viewHub_.sendInvokeResult(viewName, methodName, result, sessionId, requestId);
+    view.on('showResponse', function (response, sesionId, requestId) {
+        self.viewHub_.sendResponse(viewName, response, sesionId, requestId);
     });
 
     self.viewHub_.on('modelRequest', function (requestViewName, sessionId, requestId) {
@@ -201,11 +193,11 @@ LogicSet.prototype.linkView_ = function (viewName) {
         view.invoke(methodName, args, sessionId, requestId);
     });
 
-    self.viewHub_.on('subscribe', function (sessionId, requestId) {
+    self.viewHub_.on('subscribeRequest', function (sessionId, requestId) {
         view.subscribe(sessionId, requestId);
     });
 
-    self.viewHub_.on('unsubscribe', function (sessionId, requestId) {
+    self.viewHub_.on('unsubscribeRequest', function (sessionId, requestId) {
         view.unsubscribe(sessionId, requestId);
     });
 };

@@ -44,10 +44,11 @@
     },
 
     "logger":{
-        "levels":"debug+error+warn+trace",
+        "levels":"debug+error+warn+trace+info",
         "debug":"./logs/%pid_debug_%y-%m-%d.log",
         "error":"./logs/%pid_error_%y-%m-%d.log",
         "warn":"./logs/%pid_warn_%y-%m-%d.log",
-        "trace":"./logs/%pid_trace_%y-%m-%d.log"
+        "trace":"./logs/%pid_trace_%y-%m-%d.log",
+        "info":"./logs/%pid_info_%y-%m-%d.log"
     }
 }

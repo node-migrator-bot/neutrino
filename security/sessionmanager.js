@@ -219,7 +219,7 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
             var id = mongodb.ObjectID.createFromHexString(sessionId);
             self.storage_.findAndModify({_id:id}, [
                 ['_id', 'asc']
-            ], {$set:setParameters}, {upsert:true, new:true},
+            ], {$set:setParameters}, {new:true},
                 function (error, object) {
 
                     if (error) {

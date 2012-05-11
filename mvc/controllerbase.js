@@ -58,7 +58,10 @@ function ControllerBase(config, name, model, view) {
 
     self.on('error', function (error, sessionId, requestId) {
         if (!sessionId) return;
-        self.view_.showError(error, sessionId, requestId);
+        self.view_.showResponse({
+            success:false,
+            error:error
+        }, sessionId, requestId);
     });
 
     self.view_.on('setValue', function (propertyName, newValue, sessionId, requestId) {
@@ -157,12 +160,14 @@ ControllerBase.prototype.setValue = function (propertyName, newValue, sessionId,
                         self.emit('error', error, sessionId, requestId);
                     } else {
                         self.model_[propertyName].$(newValue);
+                        self.view_.showResponse({success:true}, sessionId, requestId);
                     }
 
                 });
 
             } else {
                 self.model_[propertyName].$(newValue);
+                self.view_.showResponse({success:true}, sessionId, requestId);
             }
         };
 
@@ -206,7 +211,7 @@ ControllerBase.prototype.invoke = function (methodName, args, sessionId, request
             var invokeValidatorName = util.format(neutrino.mvc.methodInvokeValidatorFormat, methodName),
 
                 methodCallback = function (result) {
-                    self.view_.invokeResult(methodName, result, sessionId, requestId);
+                    self.view_.showResponse({success:true, result:result}, sessionId, requestId);
                 },
                 methodArgs = [methodCallback].concat(args),
 
@@ -284,7 +289,7 @@ ControllerBase.prototype.getModel = function (sessionId, requestId) {
 
             }
             //TODO solve asynchronous validator issue
-            self.view_.showModel(model, sessionId, requestId);
+            self.view_.showResponse({success:true, model:model}, sessionId, requestId);
         };
 
     if (neutrino.mvc.modelAccessValidatorName in self) {
@@ -358,6 +363,10 @@ ControllerBase.prototype.subscribe = function (sessionId, requestId) {
 
     self.subscribers_[sessionId] = true;
 
+    self.view_.showResponse({
+        success:self.subscribers_[sessionId]
+    }, sessionId, requestId);
+
 };
 
 //noinspection JSUnusedLocalSymbols
@@ -374,6 +383,9 @@ ControllerBase.prototype.unsubscribe = function (sessionId, requestId) {
         return;
     }
 
-    delete self.subscribers_[sessionId];
+    var result = delete self.subscribers_[sessionId];
 
+    self.view_.showResponse({
+        success:result
+    }, sessionId, requestId);
 };
