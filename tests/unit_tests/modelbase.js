@@ -167,7 +167,7 @@ exports['Receive incoming data from event service'] = function (test) {
     test.expect(1);
 
     worker1.logicSet_.on('modelLoaded', function () {
-        worker1.logicSet_.models_['test'].on('data', function (data) {
+        worker1.logicSet_.models_['test'].on('data', function (sender, data) {
 
             test.deepEqual(data.message, 'testMessage');
 
@@ -176,6 +176,45 @@ exports['Receive incoming data from event service'] = function (test) {
                 test.done();
             });
         });
+    });
+
+};
+
+exports['Send data to event service'] = function (test) {
+
+    //noinspection JSUnusedLocalSymbols
+    var config = {
+            "eventBus":{
+                "serverPort":8084
+            },
+            "master":{
+                "eventServicesFolder":"./tests/services"
+            },
+            mvc:{
+                modelsCollectionName:'testModels4',
+                modelsFolder:"./tests/models"
+            }
+        },
+        master = neutrino.createMaster(config),
+        worker1 = neutrino.createWorker(config);
+
+    test.expect(1);
+
+    worker1.logicSet_.on('modelLoaded', function () {
+        worker1.logicSet_.models_['test'].on('data', function (sender, data) {
+
+            if (sender !== 'testservice2') {
+                return;
+            }
+
+            test.deepEqual(data.message, 'dataReceived');
+
+            dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
+                collection.drop();
+                test.done();
+            });
+        });
+        worker1.logicSet_.models_['test'].sendToServiceTest('testservice2', 'dataReceived');
     });
 
 };

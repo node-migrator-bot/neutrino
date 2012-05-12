@@ -69,26 +69,26 @@ function LogicSet(config, worker) {
     self.controllers_ = {};
     self.views_ = {};
 
-    self.worker_.on('data', function (data) {
+    self.worker_.on('data', function (sender, data) {
 
         for (var modelName in self.models_) {
 
             if (!self.models_.hasOwnProperty(modelName)) {
                 continue;
             }
-            self.models_[modelName].dataMessageHandler(data);
+            self.models_[modelName].dataMessageHandler(sender, data);
 
         }
     });
 
-    self.worker_.on('sync', function (data) {
+    self.worker_.on('sync', function (sender, data) {
 
         for (var modelName in self.models_) {
 
             if (!self.models_.hasOwnProperty(modelName)) {
                 continue;
             }
-            self.models_[modelName].syncMessageHandler(data);
+            self.models_[modelName].syncMessageHandler(sender, data);
 
         }
 
@@ -270,6 +270,10 @@ LogicSet.prototype.initModels_ = function () {
 
             model.on('sendSync', function (message) {
                 self.worker_.sendSyncMessage(message);
+            });
+
+            model.on('sendData', function (serviceName, data) {
+                self.worker_.sendDataMessage({serviceName:serviceName, data:data});
             });
 
             self.models_[modelName] = model;

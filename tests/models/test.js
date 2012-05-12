@@ -19,3 +19,8 @@ Test.prototype.testMethod = function (callback, returnValue) {
 Test.prototype.privateTest_ = function (callback, returnValue) {
     callback(returnValue);
 };
+
+Test.prototype.sendToServiceTest = function (serviceName, dataValue) {
+    var self = this;
+    self.emit('sendData', serviceName, dataValue);
+};

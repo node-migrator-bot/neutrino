@@ -244,6 +244,31 @@ Master.prototype.loadHandler_ = function (messageObject, workerId) {
 };
 
 /**
+ * Handle data messages from models and rout it to event services.
+ * @param {Object} messageObject Message from worker.
+ * @param {String} workerId Sender worker ID.
+ * @private
+ */
+Master.prototype.dataHandler_ = function (messageObject, workerId) {
+
+    var self = this;
+
+    if (!messageObject.value ||
+        !messageObject.value.serviceName ||
+        !self.eventServices_[messageObject.value.serviceName]) {
+        return;
+    }
+    var serviceReceiver = self.eventServices_[messageObject.value.serviceName];
+
+    if (!('handleData' in serviceReceiver) || typeof(serviceReceiver.handleData) !== 'function') {
+        return;
+    }
+
+    serviceReceiver.handleData(messageObject.value.data);
+
+};
+
+/**
  * Init all events services of master node.
  * @private
  */
@@ -270,6 +295,7 @@ Master.prototype.initEventServices_ = function () {
 
             service.on('data', function (data) {
                 self.eventBusServer_.sendToWorker({
+                    sender:serviceName,
                     type:'data',
                     value:data
                 }, self.balancer_.getWorker());

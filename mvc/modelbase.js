@@ -176,20 +176,22 @@ ModelBase.prototype.deserialize = function (modelObject) {
 
 /**
  * Handle data messages.
+ * @param {String} sender Sender ID.
  * @param {Object} data Data of message.
  */
-ModelBase.prototype.dataMessageHandler = function (data) {
+ModelBase.prototype.dataMessageHandler = function (sender, data) {
 
     var self = this;
-    self.emit('data', data);
+    self.emit('data', sender, data);
 
 };
 
 /**
  * Handle synchronization messages.
+ * @param {String} sender Sender ID.
  * @param {Object} data Synchronization data.
  */
-ModelBase.prototype.syncMessageHandler = function (data) {
+ModelBase.prototype.syncMessageHandler = function (sender, data) {
 
     var self = this;
 

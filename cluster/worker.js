@@ -186,7 +186,7 @@ Worker.prototype.messageHandler_ = function (messageObject) {
         return;
     }
 
-    self.emit(messageObject.type, messageObject.value);
+    self.emit(messageObject.type, messageObject.sender, messageObject.value);
 };
 
 /**
@@ -199,6 +199,21 @@ Worker.prototype.sendSyncMessage = function (data) {
 
     self.eventBusClient_.sendToMaster({
         type:'sync',
+        sender:self.id,
+        value:data
+    });
+};
+
+/**
+ * Send data message to specified event service on master.
+ * @param {Object} data Data to send.
+ */
+Worker.prototype.sendDataMessage = function (data) {
+
+    var self = this;
+
+    self.eventBusClient_.sendToMaster({
+        type:'data',
         sender:self.id,
         value:data
     });
