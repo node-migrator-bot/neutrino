@@ -111,7 +111,7 @@ Worker.prototype.loadSendInterval_ = neutrino.defaults.worker.loadSendInterval;
  * Current worker node load estimation.
  * @type {Number}
  */
-Worker.prototype.loadEstimation_ = 0;
+Worker.prototype.loadEstimation = 0;
 
 /**
  * Current worker node host name.
@@ -137,7 +137,7 @@ Worker.prototype.loadEstimationUpdate_ = function () {
 
     self.eventBusClient_.sendToMaster({
         type:'load',
-        value:self.loadEstimation_
+        value:self.loadEstimation
     });
 };
 

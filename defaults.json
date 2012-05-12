@@ -13,12 +13,13 @@
 
     "master":{
         "httpPort":8080,
+        "clientScriptFolder":"./client.min",
         "eventServicesFolder":"./eventServices"
     },
 
     "worker":{
         "host":"localhost",
-        "port":"50888",
+        "port":50888,
         "loadSendInterval":60000
     },
 

@@ -8,6 +8,8 @@
             <path value="file://$PROJECT_DIR$/tests/models" />
             <path value="file://$PROJECT_DIR$/tests/reporter" />
             <path value="file://$PROJECT_DIR$/tests/services" />
+            <path value="file://$PROJECT_DIR$/client" />
+            <path value="file://$PROJECT_DIR$/client.min" />
           </resourceRoots>
         </entryData>
       </entry>

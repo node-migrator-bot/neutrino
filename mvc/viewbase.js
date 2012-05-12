@@ -37,7 +37,7 @@ util.inherits(ViewBase, events.EventEmitter);
 
 //noinspection JSUnusedLocalSymbols
 /**
- * Create new instance of neutrino base view
+ * Create new instance of neutrino base view.
  * @param {neutrino.core.Config} config Neutrino config object.
  * @param {String} name Name of view.
  * @constructor

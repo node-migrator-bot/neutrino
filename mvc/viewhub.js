@@ -50,11 +50,15 @@ function ViewHub(config) {
     events.EventEmitter.call(self);
 
     self.port_ = workerConfig.port || self.port_;
-    var httpServer = http.createServer();
+    var httpServer = http.createServer(function (request, response) {
+        response.setHeader('Server', 'neutrino');
+        response.setHeader('Access-Control-Allow-Origin', '*');
+    });
 
     httpServer.listen(self.port_);
 
     var io = socketio.listen(httpServer, {
+        origins:['*:*', '*'],
         logger:neutrino.logger
     });
 
@@ -84,7 +88,7 @@ ViewHub.prototype.sendResponse = function (viewName, responseObject, sessionId, 
             requestId:requestId,
             sessionId:sessionId,
             viewName:viewName,
-            response:responseObject
+            responseBody:responseObject
         };
     self.emit('response' + requestId, response);
 
@@ -126,12 +130,25 @@ ViewHub.prototype.normalizeRequest_ = function (socket, request, callback) {
     var self = this,
         now = new Date().getTime();
 
-    request.id = self.generateRequestId_();
+    if (!request.id) {
+        request.id = self.generateRequestId_();
+    }
+
     if (!socket.sessionIds) {
         socket.sessionIds = {};
     }
 
-    neutrino.sessionManager.set({lastAccess:now}, function (error) {
+    if (!request.sessionId || !(/[a-z0-9]{24}/i.test(request.sessionId))) {
+        neutrino.sessionManager.create({lastAccess:now}, function (error, sessionObject, sessionId) {
+            request.sessionId = sessionId;
+
+            socket.sessionIds[sessionId] = true;
+
+            callback(request);
+        });
+        return;
+    }
+    neutrino.sessionManager.set(request.sessionId, {lastAccess:now}, function (error) {
 
         if (error) {
             neutrino.sessionManager.create({lastAccess:now}, function (error, sessionId) {
@@ -178,26 +195,28 @@ ViewHub.prototype.newConnectionHandler_ = function (socket) {
     });
 
     socket.on('invokeMethodRequest', function (request) {
-        self.invokeMethodRequestHandler_(request);
+        self.invokeMethodRequestHandler_(socket, request);
     });
 
     socket.on('editRequest', function (request) {
-        self.editRequestHandler_(request);
+        self.editRequestHandler_(socket, request);
     });
 
     socket.on('subscribeRequest', function (request) {
-        self.subscribeRequestHandler_(request);
+        self.subscribeRequestHandler_(socket, request);
     });
 
     socket.on('unsubscribeRequest', function (request) {
-        self.unsubscribeRequestHandler_(request);
+        self.unsubscribeRequestHandler_(socket, request);
     });
 
     self.on('sendNewValue', function (viewName, propertyName, oldValue, newValue, sessionId) {
-        if (socket.sessionIds.hasOwnProperty(sessionId)) {
+        if (socket.sessionIds && socket.sessionIds.hasOwnProperty(sessionId)) {
             socket.emit('newValue', viewName, propertyName, oldValue, newValue);
         }
     });
+
+    self.emit('connected', socketAddress);
 };
 
 /**
@@ -211,8 +230,8 @@ ViewHub.prototype.disconnectHandler_ = function (socketAddress, sessionId) {
     var self = this,
         requestId = self.generateRequestId_();
 
+    self.emit('unsubscribe', '*', sessionId, requestId);
     self.emit('disconnected', socketAddress);
-    self.emit('unsubscribe', sessionId, requestId);
 
 };
 
@@ -222,7 +241,6 @@ ViewHub.prototype.disconnectHandler_ = function (socketAddress, sessionId) {
  * @param {socket.io.socket} socket Socket object.
  * @param {Object} request Request object.
  * @param {String} socketEventName Response socket event name.
- * @return {Object}
  */
 ViewHub.prototype.basicRequestHandler = function (socket, request, socketEventName, callback) {
 
@@ -238,7 +256,6 @@ ViewHub.prototype.basicRequestHandler = function (socket, request, socketEventNa
         callback(validRequest);
     });
 
-    return validRequest;
 };
 
 //noinspection JSValidateJSDoc
@@ -252,7 +269,7 @@ ViewHub.prototype.getModelRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'invokeMethodResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, 'getModelResponse', function (validRequest) {
 
         self.emit('modelRequest', validRequest.viewName, validRequest.sessionId, validRequest.id);
 
@@ -290,7 +307,7 @@ ViewHub.prototype.editRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'invokeMethodResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, 'editResponse', function (validRequest) {
 
         self.emit('editRequest', validRequest.viewName, validRequest.propertyName,
             validRequest.newValue, validRequest.sessionId, validRequest.id);
@@ -308,9 +325,9 @@ ViewHub.prototype.subscribeRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'invokeMethodResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, 'subscribeResponse', function (validRequest) {
 
-        self.emit('subscribeRequest', validRequest.sessionId, validRequest.id);
+        self.emit('subscribeRequest', validRequest.viewName, validRequest.sessionId, validRequest.id);
     });
 };
 
@@ -324,8 +341,8 @@ ViewHub.prototype.subscribeRequestHandler_ = function (socket, request) {
 ViewHub.prototype.unsubscribeRequestHandler_ = function (socket, request) {
 
     var self = this;
-    self.basicRequestHandler(socket, request, 'invokeMethodResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, 'unsubscribeResponse', function (validRequest) {
 
-        self.emit('unsubscribeRequest', validRequest.sessionId, validRequest.id);
+        self.emit('unsubscribeRequest', validRequest.viewName || '*', validRequest.sessionId, validRequest.id);
     });
 };

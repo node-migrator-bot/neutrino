@@ -58,6 +58,12 @@ function LogicSet(config, worker) {
     self.viewsFolder_ = mvcConfig.viewsFolder || self.viewsFolder_;
 
     self.viewHub_ = new neutrino.mvc.ViewHub(config);
+    self.viewHub_.on('connected', function () {
+        self.worker_.loadEstimation++;
+    });
+    self.viewHub_.on('disconnected', function () {
+        self.worker_.loadEstimation--;
+    });
 
     self.models_ = {};
     self.controllers_ = {};
@@ -168,8 +174,8 @@ LogicSet.prototype.linkView_ = function (viewName) {
         self.viewHub_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
-    view.on('showResponse', function (response, sesionId, requestId) {
-        self.viewHub_.sendResponse(viewName, response, sesionId, requestId);
+    view.on('showResponse', function (response, sessionId, requestId) {
+        self.viewHub_.sendResponse(viewName, response, sessionId, requestId);
     });
 
     self.viewHub_.on('modelRequest', function (requestViewName, sessionId, requestId) {
@@ -193,11 +199,17 @@ LogicSet.prototype.linkView_ = function (viewName) {
         view.invoke(methodName, args, sessionId, requestId);
     });
 
-    self.viewHub_.on('subscribeRequest', function (sessionId, requestId) {
+    self.viewHub_.on('subscribeRequest', function (requestViewName, sessionId, requestId) {
+        if (requestViewName !== viewName) {
+            return;
+        }
         view.subscribe(sessionId, requestId);
     });
 
-    self.viewHub_.on('unsubscribeRequest', function (sessionId, requestId) {
+    self.viewHub_.on('unsubscribeRequest', function (requestViewName, sessionId, requestId) {
+        if (requestViewName !== viewName && requestViewName !== '*') {
+            return;
+        }
         view.unsubscribe(sessionId, requestId);
     });
 };

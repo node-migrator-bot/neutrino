@@ -383,9 +383,9 @@ ControllerBase.prototype.unsubscribe = function (sessionId, requestId) {
         return;
     }
 
-    var result = delete self.subscribers_[sessionId];
+    delete self.subscribers_[sessionId];
 
     self.view_.showResponse({
-        success:result
+        success:self.subscribers_[sessionId] == false
     }, sessionId, requestId);
 };

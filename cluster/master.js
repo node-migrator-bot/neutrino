@@ -44,13 +44,13 @@ function Master(config) {
         masterConfig = config.$('master') || {};
 
     self.config_ = config;
+    self.charset_ = masterConfig.charset || self.charset_;
+    self.clientScriptFolder_ = masterConfig.clientScriptFolder || self.clientScriptFolder_;
     self.eventServicesFolder_ = masterConfig.eventServicesFolder || self.eventServicesFolder_;
     self.eventBusServer_ = new neutrino.cluster.EventBusServer(config);
     self.balancer_ = new neutrino.cluster.Balancer();
     self.httpServer_ = http.createServer(function (request, response) {
-        var workerInfo = self.getFreeWorker(),
-            json = JSON.stringify(workerInfo);
-        response.end(json);
+        self.httpRequestHandler_(request, response);
     });
 
     self.httpServerPort_ = masterConfig.httpPort || self.httpServerPort_;
@@ -77,6 +77,7 @@ function Master(config) {
     });
 
     self.initEventServices_();
+    self.createClientScript_();
 }
 
 /**
@@ -85,6 +86,13 @@ function Master(config) {
  * @private
  */
 Master.prototype.config_ = null;
+
+/**
+ * Current charset.
+ * @type {String}
+ * @private
+ */
+Master.prototype.charset_ = neutrino.defaults.charset;
 
 /**
  * EBS server for cluster communication.
@@ -121,6 +129,20 @@ Master.prototype.httpServer_ = null;
  * @private
  */
 Master.prototype.httpServerPort_ = neutrino.defaults.master.httpPort;
+
+/**
+ * Cached client script.
+ * @type {String}
+ * @private
+ */
+Master.prototype.clientScript_ = '';
+
+/**
+ * Current client script folder.
+ * @type {String}
+ * @private
+ */
+Master.prototype.clientScriptFolder_ = neutrino.defaults.master.clientScriptFolder;
 
 /**
  * Current event services folder.
@@ -257,5 +279,71 @@ Master.prototype.initEventServices_ = function () {
 
         });
     });
+
+};
+
+/**
+ * Create cached version of client script.
+ * @private
+ */
+Master.prototype.createClientScript_ = function () {
+
+    var self = this;
+
+    fs.readdir(self.clientScriptFolder_, function (error, files) {
+
+        if (error) {
+            throw new Error('Client scripts folder "' + self.clientScriptFolder_ + '" was not found!');
+        }
+
+        files.forEach(function (file) {
+
+            var path = util.format('%s/%s', self.clientScriptFolder_, file);
+
+            fs.readFile(path, self.charset_, function (error, data) {
+                if (error) {
+                    throw error;
+                }
+                self.clientScript_ += data + '\n';
+            });
+        });
+    });
+
+};
+
+/**
+ * Handle all HTTP requests
+ * @param {Object} request HTTP request.
+ * @param {Object} response HTTP response.
+ * @private
+ */
+Master.prototype.httpRequestHandler_ = function (request, response) {
+
+    var self = this;
+
+    response.setHeader('Server', 'neutrino');
+    response.setHeader('Access-Control-Allow-Origin', '*');
+
+    switch (request.url) {
+        case '/client.js':
+            response.writeHead(200, {
+                'Content-Type':'application/x-javascript'
+            });
+            response.end(self.clientScript_);
+            return;
+
+        case '/getWorker':
+            var workerInfo = self.getFreeWorker() || {},
+                json = JSON.stringify(workerInfo);
+            response.writeHead(200, {
+                'Content-Type':'application/json'
+            });
+            response.end(json);
+            return;
+
+        default:
+            response.writeHead(404);
+            response.end();
+    }
 
 };
