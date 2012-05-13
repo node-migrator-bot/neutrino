@@ -388,15 +388,15 @@ neutrino.exports = exports;
 
             self.socket_.on('reconnect', function () {
                 self.reconnectHandler_();
-                self.emit('reconnect');
+                self.emit('reconnect', workerAddress);
             });
 
             self.socket_.on('connect', function () {
-                self.emit('connect');
+                self.emit('connect', workerAddress);
             });
 
             self.socket_.on('disconnect', function () {
-                self.emit('connect');
+                self.emit('disconnect');
             });
 
             self.emit('socketReady');
