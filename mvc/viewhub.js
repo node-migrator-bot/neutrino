@@ -50,6 +50,8 @@ function ViewHub(config) {
     events.EventEmitter.call(self);
 
     self.port_ = workerConfig.port || workerConfig.port === null ? workerConfig.port : self.port_;
+    self.host_ = workerConfig.host || workerConfig.host === null ? workerConfig.host : self.host_;
+
     var httpServer = http.createServer(function (request, response) {
         response.setHeader('Server', 'neutrino');
         response.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,7 +59,9 @@ function ViewHub(config) {
 
     httpServer.listen(self.port_ === null ? undefined : self.port_, function () {
         var address = httpServer.address();
-        self.emit('httpServerStarted', address);
+
+        self.emit('httpServerStarted',
+            self.host_ === null ? address.address : self.host_, address.port);
     });
 
     var io = socketio.listen(httpServer, {
@@ -69,6 +73,13 @@ function ViewHub(config) {
         self.newConnectionHandler_(socket);
     });
 }
+
+/**
+ * Current socket.io host address.
+ * @type {String}
+ * @private
+ */
+ViewHub.prototype.host_ = neutrino.defaults.worker.host;
 
 /**
  * Current socket.io port of view hub.
