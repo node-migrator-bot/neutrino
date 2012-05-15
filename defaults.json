@@ -19,7 +19,7 @@
 
     "worker":{
         "host":"localhost",
-        "port":50888,
+        "port":null,
         "loadSendInterval":60000
     },
 

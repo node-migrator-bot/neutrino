@@ -30,7 +30,7 @@
 neutrino = {};
 module.exports = neutrino;
 
-neutrino.version = '0.0.1';
+neutrino.version = '0.0.2';
 neutrino.defaults = require('./defaults.json');
 
 neutrino.core = {};

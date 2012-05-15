@@ -155,6 +155,17 @@ Worker.prototype.addressUpdate_ = function () {
     });
 
 };
+/**
+ * Set new host and port for incoming client connections.
+ * @param {String} host Host address.
+ * @param {Number} port Port number.
+ */
+Worker.prototype.setCurrentAddress = function (host, port) {
+    var self = this;
+    self.host_ = host;
+    self.port_ = port;
+    self.addressUpdate_();
+};
 
 /**
  * Start new worker node.

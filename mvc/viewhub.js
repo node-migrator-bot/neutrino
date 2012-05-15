@@ -49,13 +49,16 @@ function ViewHub(config) {
 
     events.EventEmitter.call(self);
 
-    self.port_ = workerConfig.port || self.port_;
+    self.port_ = workerConfig.port || workerConfig.port === null ? workerConfig.port : self.port_;
     var httpServer = http.createServer(function (request, response) {
         response.setHeader('Server', 'neutrino');
         response.setHeader('Access-Control-Allow-Origin', '*');
     });
 
-    httpServer.listen(self.port_);
+    httpServer.listen(self.port_ === null ? undefined : self.port_, function () {
+        var address = httpServer.address();
+        self.emit('httpServerStarted', address);
+    });
 
     var io = socketio.listen(httpServer, {
         origins:['*:*', '*'],

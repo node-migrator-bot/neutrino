@@ -64,6 +64,9 @@ function LogicSet(config, worker) {
     self.viewHub_.on('disconnected', function () {
         self.worker_.loadEstimation--;
     });
+    self.viewHub_.on('httpServerStarted', function (address) {
+        self.worker_.setCurrentAddress(address.address, address.port);
+    });
 
     self.models_ = {};
     self.controllers_ = {};
