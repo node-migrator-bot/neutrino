@@ -287,6 +287,7 @@ neutrino.exports = exports;
 
         self.setMaxListeners(0);
 
+        self.masterUrl = masterUrl;
         self.subscriptions_ = {};
         self.cookieProvider_ = new CookieProvider();
         self.on('socketReady', function () {
@@ -297,6 +298,12 @@ neutrino.exports = exports;
         self.connect_(masterUrl);
 
     }
+
+    /**
+     * Current master URL.
+     * @type {String}
+     */
+    ViewHubClient.prototype.masterUrl = '';
 
     /**
      * Is socket ready to send messages.
@@ -340,18 +347,17 @@ neutrino.exports = exports;
      * @type {Object}
      * @private
      */
-    ViewHubClient.prototype.socket_ = null;
+    ViewHubClient.prototype.socketNamespace_ = null;
 
     /**
      * Get worker node address and connect to it.
-     * @param {String} masterUrl Master node URL.
      * @private
      */
-    ViewHubClient.prototype.connect_ = function (masterUrl) {
+    ViewHubClient.prototype.connect_ = function () {
 
         var self = this;
 
-        microAjax(masterUrl + '/getWorker', function (result) {
+        microAjax(self.masterUrl + '/getWorker', function (result) {
 
             var workerAddress = (new Function("return " + result))(),
                 workerAddressUrl = 'http://' + workerAddress.host + ':' + workerAddress.port;
@@ -360,42 +366,39 @@ neutrino.exports = exports;
                 throw new Error('Neutrino has no worker nodes');
             }
 
-            self.socket_ = io.connect(workerAddressUrl);
+            self.socketNamespace_ = io.connect(workerAddressUrl, {reconnect:false});
 
-            self.socket_.on('newValue', function (viewName, propertyName, oldValue, newValue) {
+            self.socketNamespace_.on('newValue', function (viewName, propertyName, oldValue, newValue) {
                 self.newValueHandler_(viewName, propertyName, oldValue, newValue);
             });
 
-            self.socket_.on('invokeMethodResponse', function (response) {
+            self.socketNamespace_.on('invokeMethodResponse', function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socket_.on('subscribeResponse', function (response) {
+            self.socketNamespace_.on('subscribeResponse', function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socket_.on('unsubscribeResponse', function (response) {
+            self.socketNamespace_.on('unsubscribeResponse', function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socket_.on('editResponse', function (response) {
+            self.socketNamespace_.on('editResponse', function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socket_.on('getModelResponse', function (response) {
+            self.socketNamespace_.on('getModelResponse', function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socket_.on('reconnect', function () {
-                self.reconnectHandler_();
-                self.emit('reconnect', workerAddress);
-            });
-
-            self.socket_.on('connect', function () {
+            self.socketNamespace_.on('connect', function () {
+                self.connectHandler_();
                 self.emit('connect', workerAddress);
             });
 
-            self.socket_.on('disconnect', function () {
+            self.socketNamespace_.on('disconnect', function () {
+                self.disconnectHandler_();
                 self.emit('disconnect');
             });
 
@@ -433,7 +436,7 @@ neutrino.exports = exports;
 
                     callback && callback(null, response.result);
                 });
-                self.socket_.emit('invokeMethodRequest', {
+                self.socketNamespace_.emit('invokeMethodRequest', {
                     viewName:viewName,
                     methodName:methodName,
                     args:args,
@@ -475,7 +478,7 @@ neutrino.exports = exports;
 
                     callback && callback(null, response.model);
                 });
-                self.socket_.emit('getModelRequest', {
+                self.socketNamespace_.emit('getModelRequest', {
                     viewName:viewName,
                     sessionId:self.sessionId,
                     id:requestId
@@ -517,7 +520,7 @@ neutrino.exports = exports;
 
                     callback && callback(null);
                 });
-                self.socket_.emit('editRequest', {
+                self.socketNamespace_.emit('editRequest', {
                     viewName:viewName,
                     propertyName:propertyName,
                     newValue:newValue,
@@ -565,7 +568,7 @@ neutrino.exports = exports;
                     self.subscriptions_[viewName].push(handler);
                     callback && callback(null);
                 });
-                self.socket_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+                self.socketNamespace_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
 
             };
 
@@ -611,7 +614,7 @@ neutrino.exports = exports;
                     }
 
                 });
-                self.socket_.emit('unsubscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+                self.socketNamespace_.emit('unsubscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
             };
 
         if (self.isSocketReady_) {
@@ -622,10 +625,22 @@ neutrino.exports = exports;
     };
 
     /**
+     * Close connection and connect to other node.
+     */
+    ViewHubClient.prototype.disconnectHandler_ = function () {
+
+        var self = this;
+        self.isSocketReady_ = false;
+        self.socketNamespace_.removeAllListeners();
+        self.connect_();
+
+    };
+
+    /**
      * Resubscribe all client subscriptions.
      * @private
      */
-    ViewHubClient.prototype.reconnectHandler_ = function () {
+    ViewHubClient.prototype.connectHandler_ = function () {
 
         var self = this;
 
@@ -634,7 +649,7 @@ neutrino.exports = exports;
                 continue;
             }
             var requestId = self.generateRequestId_();
-            self.socket_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+            self.socketNamespace_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
         }
 
     };

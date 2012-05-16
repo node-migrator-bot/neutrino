@@ -131,7 +131,7 @@ EventBusClient.prototype.isConnected_ = false;
  * @type {net.Socket}
  * @private
  */
-EventBusClient.prototype.socket_ = null;
+EventBusClient.prototype.socketNamespace_ = null;
 
 /**
  * Current socket address.
@@ -154,21 +154,21 @@ EventBusClient.prototype.createSocket = function () {
 
     var self = this;
 
-    self.socket_ = new net.Socket();
-    self.socket_.setEncoding(self.charset_);
+    self.socketNamespace_ = new net.Socket();
+    self.socketNamespace_.setEncoding(self.charset_);
 
-    self.socket_.on('connect', function () {
+    self.socketNamespace_.on('connect', function () {
         self.connectionHandler_();
     });
 
-    self.socket_.on('data', function (data) {
+    self.socketNamespace_.on('data', function (data) {
         var items = data.split('\r\n');
         items.forEach(function (item) {
             self.incomingMessageHandler_(item);
         });
     });
 
-    self.socket_.on('close', function () {
+    self.socketNamespace_.on('close', function () {
         self.closeHandler_();
     });
 };
@@ -179,7 +179,7 @@ EventBusClient.prototype.createSocket = function () {
 EventBusClient.prototype.connect = function () {
 
     var self = this;
-    self.socket_.connect(self.serverPort_, self.serverHost_);
+    self.socketNamespace_.connect(self.serverPort_, self.serverHost_);
 
 };
 
@@ -191,7 +191,7 @@ EventBusClient.prototype.connectionHandler_ = function () {
 
     var self = this;
 
-    self.socketAddress_ = self.socket_.address();
+    self.socketAddress_ = self.socketNamespace_.address();
     self.socketAddressString_ = util.format('%s:%d',
         self.socketAddress_.address,
         self.socketAddress_.port);
@@ -254,7 +254,7 @@ EventBusClient.prototype.incomingMessageHandler_ = function (message) {
             throw new Error('Wrong secret from master');
         }
     } catch (e) {
-        self.socket_.destroy();
+        self.socketNamespace_.destroy();
         throw e;
     }
 
@@ -282,7 +282,7 @@ EventBusClient.prototype.sendToMaster = function (messageObject) {
 
     var message = JSON.stringify(messageObject);
 
-    self.socket_.write(message + '\r\n');
+    self.socketNamespace_.write(message + '\r\n');
 
     self.emit('serviceMessage', {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
