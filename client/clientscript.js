@@ -359,12 +359,16 @@ neutrino.exports = exports;
 
         microAjax(self.masterUrl + '/getWorker', function (result) {
 
-            var workerAddress = (new Function("return " + result))(),
-                workerAddressUrl = 'http://' + workerAddress.host + ':' + workerAddress.port;
+            var workerAddress = (new Function("return " + result))();
 
-            if (!workerAddress.host || !workerAddress.port) {
-                throw new Error('Neutrino has no worker nodes');
+            if (!workerAddress || !workerAddress.host || !workerAddress.port) {
+                setTimeout(function () {
+                    self.connect_();
+                }, 5000);
+                return;
             }
+
+            var workerAddressUrl = 'http://' + workerAddress.host + ':' + workerAddress.port;
 
             self.socketNamespace_ = io.connect(workerAddressUrl, {reconnect:false});
 
