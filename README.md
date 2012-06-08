@@ -128,7 +128,7 @@ Event service example
 		}, 5000);
 	}
 	
-	TestService.prototype.handleData = function (data) {
+	TestService.prototype.handleData = function (modelName,data) {
     	//processing data from any model
 	};
 

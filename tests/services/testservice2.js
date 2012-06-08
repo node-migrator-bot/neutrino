@@ -13,11 +13,9 @@ function TestService() {
 
 }
 
-TestService.prototype.handleData = function (data) {
+TestService.prototype.handleData = function (modelName, data) {
 
     var self = this;
-    self.emit('data', {
-        message:data
-    });
+    self.emit('data', modelName, {message:data});
 
 };

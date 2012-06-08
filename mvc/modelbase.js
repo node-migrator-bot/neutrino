@@ -152,6 +152,8 @@ ModelBase.prototype.deserialize = function (modelObject) {
     }
 
     var self = this,
+        syncPackage = [],
+        syncMessage,
         oldValue;
 
     for (var key in modelObject) {
@@ -170,8 +172,13 @@ ModelBase.prototype.deserialize = function (modelObject) {
             continue;
         }
 
-        self[key].$(modelObject[key]);
+        syncMessage = self.createSyncMessage_(key, oldValue, modelObject[key]);
+        syncPackage.push(syncMessage);
+
+        self[key].set(modelObject[key], false);
     }
+
+    self.sendSyncPackage_(syncPackage);
 };
 
 /**
@@ -189,17 +196,21 @@ ModelBase.prototype.dataMessageHandler = function (sender, data) {
 /**
  * Handle synchronization messages.
  * @param {String} sender Sender ID.
- * @param {Object} data Synchronization data.
+ * @param {Array|Object} data Synchronization data.
  */
 ModelBase.prototype.syncMessageHandler = function (sender, data) {
 
     var self = this;
 
-    if (!data || !data.modelName || data.modelName !== self.name) {
+    if (util.isArray(data)) {
+        data.forEach(function (item) {
+            self.syncMessageHandler(sender, item);
+        });
         return;
     }
 
-    if (!data.propertyName ||
+    if (!data ||
+        !data.propertyName ||
         !(data.propertyName in self) ||
         !(self[data.propertyName] instanceof neutrino.mvc.Property)) {
         return;
@@ -229,14 +240,43 @@ ModelBase.prototype.changeHandler_ = function (propertyName, oldValue, newValue,
 
     if (syncRequired === undefined || syncRequired === true) {
 
+        var message = self.createSyncMessage_(propertyName, oldValue, newValue);
         self.editInStorage_(propertyName, newValue);
-        self.emit('sendSync', {
-            modelName:self.name,
-            propertyName:propertyName,
-            oldValue:oldValue,
-            newValue:newValue
-        });
+        self.emit('sendSync', message);
     }
+};
+
+/**
+ * Create synchronization message.
+ * @param {String} propertyName Model property name.
+ * @param {*} oldValue Old value of property.
+ * @param {*} newValue New value of property.
+ * @return {Object}
+ * @private
+ */
+ModelBase.prototype.createSyncMessage_ = function (propertyName, oldValue, newValue) {
+
+    return{
+        propertyName:propertyName,
+        oldValue:oldValue,
+        newValue:newValue
+    };
+};
+
+/**
+ * Send package of sync. messages.
+ * @param {Array} messages Array of messages.
+ * @private
+ */
+ModelBase.prototype.sendSyncPackage_ = function (messages) {
+
+    var self = this;
+
+    if (messages.length === 0) {
+        return;
+    }
+
+    self.emit('sendSync', messages);
 };
 
 /**

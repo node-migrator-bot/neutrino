@@ -13,7 +13,7 @@ function TestService() {
 
     self.timeout = setTimeout(function () {
 
-        self.emit('data', {
+        self.emit('data', 'test', {
 
             message:'testMessage'
 

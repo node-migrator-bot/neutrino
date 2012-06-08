@@ -264,7 +264,7 @@ Master.prototype.dataHandler_ = function (messageObject, workerId) {
         return;
     }
 
-    serviceReceiver.handleData(messageObject.value.data);
+    serviceReceiver.handleData(messageObject.value.modelName, messageObject.value.data);
 
 };
 
@@ -293,11 +293,11 @@ Master.prototype.initEventServices_ = function () {
                 Service = require(servicePath),
                 service = new Service(self.config_);
 
-            service.on('data', function (data) {
+            service.on('data', function (modelName, data) {
                 self.eventBusServer_.sendToWorker({
                     sender:serviceName,
                     type:'data',
-                    value:data
+                    value:{modelName:modelName, data:data}
                 }, self.balancer_.getWorker());
             });
 

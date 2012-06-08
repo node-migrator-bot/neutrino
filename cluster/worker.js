@@ -59,6 +59,9 @@ function Worker(config) {
     });
 
     self.eventBusClient_.on('workerMessage', function (messageObject) {
+        if (!self.validateMessage_(messageObject)) {
+            return;
+        }
         self.messageHandler_(messageObject);
     });
 
@@ -178,20 +181,27 @@ Worker.prototype.start = function () {
 };
 
 /**
+ * Validate incoming message and return true if it's valid.
+ * @param {Object} messageObject Message object.
+ * @return {Boolean}
+ * @private
+ */
+Worker.prototype.validateMessage_ = function (messageObject) {
+
+    var self = this;
+    return messageObject &&
+        messageObject.type &&
+        messageObject.sender &&
+        messageObject.sender != self.id;
+};
+
+/**
  * Handle all incoming messages.
  * @param {Object} messageObject Incoming message object.
  */
 Worker.prototype.messageHandler_ = function (messageObject) {
 
     var self = this;
-
-    if (!messageObject || !messageObject.type) {
-        return;
-    }
-
-    if (messageObject.sender && messageObject.sender === self.id) {
-        return;
-    }
 
     if (messageObject.type !== 'sync' && messageObject.type !== 'data') {
         return;
@@ -202,30 +212,33 @@ Worker.prototype.messageHandler_ = function (messageObject) {
 
 /**
  * Send synchronization message to master.
+ * @param {String} modelName Sender model name.
  * @param {Object} data Synchronization data.
  */
-Worker.prototype.sendSyncMessage = function (data) {
+Worker.prototype.sendSyncMessage = function (modelName, data) {
 
     var self = this;
 
     self.eventBusClient_.sendToMaster({
         type:'sync',
         sender:self.id,
-        value:data
+        value:{modelName:modelName, data:data}
     });
 };
 
 /**
  * Send data message to specified event service on master.
+ * @param {String} modelName Sender model name.
+ * @param {String} serviceName Receiver service name.
  * @param {Object} data Data to send.
  */
-Worker.prototype.sendDataMessage = function (data) {
+Worker.prototype.sendDataMessage = function (modelName, serviceName, data) {
 
     var self = this;
 
     self.eventBusClient_.sendToMaster({
         type:'data',
         sender:self.id,
-        value:data
+        value:{modelName:modelName, serviceName:serviceName, data:data}
     });
 };

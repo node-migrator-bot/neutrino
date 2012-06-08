@@ -72,28 +72,30 @@ function LogicSet(config, worker) {
     self.controllers_ = {};
     self.views_ = {};
 
-    self.worker_.on('data', function (sender, data) {
+    self.worker_.on('data', function (sender, value) {
+
+        if (value.modelName && value.modelName in self.models_) {
+            self.models_[value.modelName].dataMessageHandler(sender, value.data);
+            return;
+        }
 
         for (var modelName in self.models_) {
 
             if (!self.models_.hasOwnProperty(modelName)) {
                 continue;
             }
-            self.models_[modelName].dataMessageHandler(sender, data);
+            self.models_[modelName].dataMessageHandler(sender, value.data);
 
         }
     });
 
-    self.worker_.on('sync', function (sender, data) {
+    self.worker_.on('sync', function (sender, value) {
 
-        for (var modelName in self.models_) {
-
-            if (!self.models_.hasOwnProperty(modelName)) {
-                continue;
-            }
-            self.models_[modelName].syncMessageHandler(sender, data);
-
+        if (!value.modelName || !(value.modelName in self.models_)) {
+            return;
         }
+
+        self.models_[value.modelName].syncMessageHandler(sender, value.data);
 
     });
 
@@ -272,11 +274,11 @@ LogicSet.prototype.initModels_ = function () {
             });
 
             model.on('sendSync', function (message) {
-                self.worker_.sendSyncMessage(message);
+                self.worker_.sendSyncMessage(modelName, message);
             });
 
             model.on('sendData', function (serviceName, data) {
-                self.worker_.sendDataMessage({serviceName:serviceName, data:data});
+                self.worker_.sendDataMessage(modelName, serviceName, data);
             });
 
             self.models_[modelName] = model;
