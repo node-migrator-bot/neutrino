@@ -124,12 +124,12 @@ Event service example
 	        self.emit('data', 'testModelName', {
 	            messageText:'testMessage' 
 	        }); 
-	        // this message object will receive model with filename 'testModelName'
+	        // this message object will be received by model with filename 'testModelName'
 	    
 	    	self.emit('data', null, {
 	            messageText:'testMessage2' 
 	        }); 
-	        // this message object will receive all models
+	        // this message object will be received by all models
 	    
 		}, 5000);
 	}
