@@ -30,6 +30,9 @@
 module.exports = EventBusServer;
 
 var net = require('net'),
+    path = require('path'),
+    tls = require('tls'),
+    fs = require('fs'),
     events = require('events'),
     util = require('util');
 
@@ -50,13 +53,21 @@ function EventBusServer(config) {
     self.masterSecret_ = eventBusConfig.masterSecret || self.masterSecret_;
     self.workerSecret_ = eventBusConfig.workerSecret || self.workerSecret_;
     self.serverPort_ = eventBusConfig.serverPort || self.serverPort_;
+    self.tlsConfig_ = eventBusConfig.tls || self.tlsConfig_;
     self.charset_ = config.$('charset') || self.charset_;
+
     self.sockets_ = [];
     self.workers_ = {};
 
-    self.server_ = net.createServer(function (socket) {
-        self.incomingConnectionHandler_(socket);
-    });
+    self.initTlsConfig_();
+
+    self.server_ = self.tlsConfig_.enabled ?
+        tls.createServer(self.tlsConfig_, function (socket) {
+            self.incomingConnectionHandler_(socket);
+        }) :
+        net.createServer(function (socket) {
+            self.incomingConnectionHandler_(socket);
+        });
 
     self.on('messageFromMaster', function (messageObject, workerId) {
         self.processMessageFromMaster_(messageObject, workerId);
@@ -76,6 +87,13 @@ EventBusServer.prototype.masterSecret_ = neutrino.defaults.eventBus.masterSecret
  * @private
  */
 EventBusServer.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret;
+
+/**
+ * TLS configuration object.
+ * @type {Object}
+ * @private
+ */
+EventBusServer.prototype.tlsConfig_ = neutrino.defaults.eventBus.tls;
 
 /**
  * Port which EBS will listen.
@@ -121,6 +139,43 @@ EventBusServer.prototype.charset_ = neutrino.defaults.charset;
 EventBusServer.prototype.serverAddressString_ = '';
 
 /**
+ * Init TLS key files.
+ * @private
+ */
+EventBusServer.prototype.initTlsConfig_ = function () {
+
+    var self = this;
+
+    if (!self.tlsConfig_.enabled) {
+        return;
+    }
+
+    if (self.tlsConfig_.keyPath) {
+        var absoluteKeyPath = path.resolve(self.tlsConfig_.keyPath);
+        self.tlsConfig_.key = fs.readFileSync(absoluteKeyPath);
+    }
+
+    if (self.tlsConfig_.certPath) {
+        var absoluteCertPath = path.resolve(self.tlsConfig_.certPath);
+        self.tlsConfig_.cert = fs.readFileSync(absoluteCertPath);
+    }
+
+    if (self.tlsConfig_.pfxPath) {
+        var absolutePfxPath = path.resolve(self.tlsConfig_.pfxPath);
+        self.tlsConfig_.pfx = fs.readFileSync(absolutePfxPath);
+    }
+
+    if (self.tlsConfig_.caPaths) {
+
+        self.tlsConfig_.ca = [];
+        self.tlsConfig_.caPaths.forEach(function (item) {
+            var aboluteCaPath = path.resolve(item);
+            ca.push(fs.readFileSync(aboluteCaPath));
+        });
+    }
+};
+
+/**
  * Start to listen for incoming connections.
  */
 EventBusServer.prototype.start = function () {
@@ -132,7 +187,7 @@ EventBusServer.prototype.start = function () {
         self.serverAddressString_ = util.format('%s:%d', serverAddress.address, serverAddress.port);
         self.emit('serviceMessage', {
             connection:self.serverAddressString_,
-            message:'EBS started'
+            message:self.tlsConfig_.enabled ? 'EBS started with TLS/SSL' : ' EBS started'
         });
     });
 

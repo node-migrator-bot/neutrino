@@ -32,6 +32,9 @@ module.exports = EventBusClient;
 
 var net = require('net'),
     util = require('util'),
+    path = require('path'),
+    tls = require('tls'),
+    fs = require('fs'),
     events = require('events');
 
 util.inherits(EventBusClient, events.EventEmitter);
@@ -59,7 +62,7 @@ function EventBusClient(config) {
         self.serverHost_,
         self.serverPort_);
 
-    self.createSocket();
+    self.initTlsConfig_();
 }
 
 /**
@@ -75,6 +78,13 @@ EventBusClient.prototype.masterSecret_ = neutrino.defaults.eventBus.masterSecret
  * @private
  */
 EventBusClient.prototype.workerSecret_ = neutrino.defaults.eventBus.workerSecret;
+
+/**
+ * TLS configuration object.
+ * @type {Object}
+ * @private
+ */
+EventBusClient.prototype.tlsConfig_ = neutrino.defaults.eventBus.tls;
 
 /**
  * Message queue for delayed sending.
@@ -148,18 +158,60 @@ EventBusClient.prototype.socketAddress_ = null;
 EventBusClient.prototype.socketAddressString_ = '';
 
 /**
- * Create and configure socket for connection.
+ * Init TLS key files.
+ * @private
  */
-EventBusClient.prototype.createSocket = function () {
+EventBusClient.prototype.initTlsConfig_ = function () {
 
     var self = this;
 
-    self.socketNamespace_ = new net.Socket();
-    self.socketNamespace_.setEncoding(self.charset_);
+    if (!self.tlsConfig_.enabled) {
+        return;
+    }
 
-    self.socketNamespace_.on('connect', function () {
-        self.connectionHandler_();
-    });
+    if (self.tlsConfig_.keyPath) {
+        var absoluteKeyPath = path.resolve(self.tlsConfig_.keyPath);
+        self.tlsConfig_.key = fs.readFileSync(absoluteKeyPath);
+    }
+
+    if (self.tlsConfig_.certPath) {
+        var absoluteCertPath = path.resolve(self.tlsConfig_.certPath);
+        self.tlsConfig_.cert = fs.readFileSync(absoluteCertPath);
+    }
+
+    if (self.tlsConfig_.pfxPath) {
+        var absolutePfxPath = path.resolve(self.tlsConfig_.pfxPath);
+        self.tlsConfig_.pfx = fs.readFileSync(absolutePfxPath);
+    }
+
+    if (self.tlsConfig_.caPaths) {
+
+        self.tlsConfig_.ca = [];
+        self.tlsConfig_.caPaths.forEach(function (item) {
+            var aboluteCaPath = path.resolve(item);
+            ca.push(fs.readFileSync(aboluteCaPath));
+        });
+    }
+};
+
+/**
+ * Connect to EBS.
+ */
+EventBusClient.prototype.connect = function () {
+
+    var self = this;
+
+    self.socketNamespace_ = self.tlsConfig_.enabled ?
+        tls.connect(self.serverPort_, self.serverHost_, self.tlsConfig_,
+            function () {
+                self.connectionHandler_();
+            }) :
+        net.connect(self.serverPort_, self.serverHost_,
+            function () {
+                self.connectionHandler_();
+            });
+
+    self.socketNamespace_.setEncoding(self.charset_);
 
     self.socketNamespace_.on('data', function (data) {
         var items = data.split('\r\n');
@@ -171,16 +223,6 @@ EventBusClient.prototype.createSocket = function () {
     self.socketNamespace_.on('close', function () {
         self.closeHandler_();
     });
-};
-
-/**
- * Connect to EBS.
- */
-EventBusClient.prototype.connect = function () {
-
-    var self = this;
-    self.socketNamespace_.connect(self.serverPort_, self.serverHost_);
-
 };
 
 /**
@@ -200,7 +242,7 @@ EventBusClient.prototype.connectionHandler_ = function () {
 
     self.emit('serviceMessage', {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
-        message:'Connection established'
+        message:self.tlsConfig_.enabled ? 'TLS/SSL connection established' : 'Connection established'
     });
 
     self.emit('connected');

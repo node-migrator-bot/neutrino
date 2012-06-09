@@ -35,7 +35,14 @@
         "serverPort":50777,
         "reconnectInterval":5000,
         "masterSecret":"masterSecret",
-        "workerSecret":"workerSecret"
+        "workerSecret":"workerSecret",
+        "tls":{
+            "enabled":true,
+            "keyPath":"./tlskey/neutrino-key.pem",
+            "certPath":"./tlskey/neutrino-cert.pem",
+            "requestCert":false,
+            "caPaths":[]
+        }
     },
 
     "sessions":{
