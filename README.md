@@ -121,9 +121,15 @@ Event service example
 	    events.EventEmitter.call(self);
 	    setInterval(function () {
 	
-	        self.emit('data', {
+	        self.emit('data', 'testModelName', {
 	            messageText:'testMessage' 
-	        }); // this message object will receive all models of worker node 
+	        }); 
+	        // this message object will receive model with filename 'testModelName'
+	    
+	    	self.emit('data', null, {
+	            messageText:'testMessage2' 
+	        }); 
+	        // this message object will receive all models
 	    
 		}, 5000);
 	}
