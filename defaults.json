@@ -37,7 +37,7 @@
         "masterSecret":"masterSecret",
         "workerSecret":"workerSecret",
         "tls":{
-            "enabled":true,
+            "enabled":false,
             "keyPath":"./tlskey/neutrino-key.pem",
             "certPath":"./tlskey/neutrino-cert.pem",
             "requestCert":false,

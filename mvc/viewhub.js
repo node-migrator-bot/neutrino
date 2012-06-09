@@ -66,7 +66,13 @@ function ViewHub(config) {
 
     var io = socketio.listen(httpServer, {
         origins:['*:*', '*'],
-        logger:neutrino.logger
+        logger:neutrino.logger,
+        resource:"/viewhub",
+        'browser client handler':function (request, response) {
+            response.statusCode = 204;
+            response.end();
+        },
+        'flash policy server':false
     });
 
     io.sockets.on('connection', function (socket) {

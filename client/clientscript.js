@@ -370,7 +370,10 @@ neutrino.exports = exports;
 
             var workerAddressUrl = 'http://' + workerAddress.host + ':' + workerAddress.port;
 
-            self.socketNamespace_ = io.connect(workerAddressUrl, {reconnect:false});
+            self.socketNamespace_ = io.connect(workerAddressUrl, {
+                resource:"viewhub",
+                reconnect:false
+            });
 
             self.socketNamespace_.on('newValue', function (viewName, propertyName, oldValue, newValue) {
                 self.newValueHandler_(viewName, propertyName, oldValue, newValue);
