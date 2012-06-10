@@ -31,6 +31,7 @@ module.exports = Master;
 
 var util = require('util'),
     path = require('path'),
+    url = require('url'),
     http = require('http');
 
 /**
@@ -349,8 +350,10 @@ Master.prototype.httpRequestHandler_ = function (request, response) {
 
     response.setHeader('Server', 'neutrino');
     response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Expires', 'Thu, 01 Jan 1970 00:00:01 GMT');
 
-    switch (request.url) {
+    var parsedUrl = url.parse(request.url);
+    switch (parsedUrl.pathname) {
         case '/client.js':
             response.writeHead(200, {
                 'Content-Type':'application/x-javascript'

@@ -288,6 +288,7 @@ neutrino.exports = exports;
         self.setMaxListeners(0);
 
         self.masterUrl = masterUrl;
+        self.ajax_ = new AjaxProvider();
         self.subscriptions_ = {};
         self.cookieProvider_ = new CookieProvider();
         self.on('socketReady', function () {
@@ -298,6 +299,13 @@ neutrino.exports = exports;
         self.connect_(masterUrl);
 
     }
+
+    /**
+     * Current AJAX provider.
+     * @type {AjaxProvider}
+     * @private
+     */
+    ViewHubClient.prototype.ajax_ = null;
 
     /**
      * Current master URL.
@@ -357,18 +365,16 @@ neutrino.exports = exports;
 
         var self = this;
 
-        microAjax(self.masterUrl + '/getWorker', function (result) {
+        self.ajax_.requestJson(self.masterUrl + '/getWorker', function (error, result) {
 
-            var workerAddress = (new Function("return " + result))();
-
-            if (!workerAddress || !workerAddress.host || !workerAddress.port) {
+            if (error || !result || !result.host || !result.port) {
                 setTimeout(function () {
                     self.connect_();
                 }, 5000);
                 return;
             }
 
-            var workerAddressUrl = 'http://' + workerAddress.host + ':' + workerAddress.port;
+            var workerAddressUrl = 'http://' + result.host + ':' + result.port;
 
             self.socketNamespace_ = io.connect(workerAddressUrl, {
                 resource:"viewhub",
@@ -401,7 +407,7 @@ neutrino.exports = exports;
 
             self.socketNamespace_.on('connect', function () {
                 self.connectHandler_();
-                self.emit('connect', workerAddress);
+                self.emit('connect', result);
             });
 
             self.socketNamespace_.on('disconnect', function () {
@@ -420,9 +426,9 @@ neutrino.exports = exports;
      * @param {String} viewName Name of view.
      * @param {String} methodName Name of method.
      * @param {function(Error,*)} callback Result handler.
-     * @param {*} ... Optional arguments.
+     * @param {*} [params] Optional arguments.
      */
-    ViewHubClient.prototype.invoke = function (viewName, methodName, callback) {
+    ViewHubClient.prototype.invoke = function (viewName, methodName, callback, params) {
 
         var self = this,
             requestId = self.generateRequestId_(),
@@ -761,6 +767,88 @@ neutrino.exports = exports;
         //noinspection JSCheckFunctionSignatures
         self.setCookie(name, null, new Date(0), path, domain);
         return true;
+    };
+
+    /**
+     * Ajax implementation.
+     * @constructor
+     */
+    function AjaxProvider() {
+
+    }
+
+    /**
+     * Create new AJAX request object.
+     * @return {ActiveXObject|XMLHttpRequest}
+     * @private
+     */
+    AjaxProvider.prototype.createRequest_ = function () {
+
+        var request;
+
+        if (typeof(ActiveXObject) !== 'undefined') {
+            try {
+                request = new ActiveXObject("Msxml2.XMLHTTP");
+            } catch (e) {
+                request = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+        } else {
+            request = new XMLHttpRequest();
+        }
+
+        return request;
+    };
+
+    /**
+     * Do request to specified URL.
+     * @param {String} url Specified URL for request.
+     * @param {function(Error,String) callback Result and error handler.
+        */
+    AjaxProvider.prototype.request = function (url, callback) {
+
+        var self = this;
+        var request = self.createRequest_();
+
+        request.open("GET", url, true);
+        request.send(null);
+
+        if (callback) {
+
+            var statusChecker = function () {
+                if (request.readyState != 4) {
+                    setTimeout(statusChecker, 10);
+                }
+
+                if (request.status == 200) {
+                    callback(null, request.responseText);
+                } else {
+                    callback(new Error(request.status), null);
+                }
+            };
+
+            setTimeout(statusChecker, 10);
+
+        }
+
+    };
+
+    /**
+     * Get JSON from specified URL.
+     * @param {String} url specified URL.
+     * @param {function(Error,Object) callback Error and result handler.
+        */
+    AjaxProvider.prototype.requestJson = function (url, callback) {
+
+        var self = this;
+        self.request(url, function (error, result) {
+            try {
+                var resultObject = (new Function("return " + result))();
+                callback(null, resultObject);
+            } catch (e) {
+                callback(e, null);
+            }
+
+        });
     };
 
 })();
