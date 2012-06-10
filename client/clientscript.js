@@ -786,17 +786,21 @@ neutrino.exports = exports;
 
         var request;
 
-        if (typeof(ActiveXObject) !== 'undefined') {
-            try {
-                request = new ActiveXObject("Msxml2.XMLHTTP");
-            } catch (e) {
-                request = new ActiveXObject("Microsoft.XMLHTTP");
-            }
-        } else {
-            request = new XMLHttpRequest();
+        //Chrome,Firefox,Opera,Safari
+        if (typeof(XMLHttpRequest) !== 'undefined') {
+            return new XMLHttpRequest();
         }
 
-        return request;
+        //legacy
+        if (typeof(ActiveXObject) !== 'undefined') {
+            try {
+                return new ActiveXObject("Msxml2.XMLHTTP");
+            } catch (e) {
+                return new ActiveXObject("Microsoft.XMLHTTP");
+            }
+        }
+
+        throw new Error('AJAX is not supported');
     };
 
     /**
@@ -817,6 +821,7 @@ neutrino.exports = exports;
             var statusChecker = function () {
                 if (request.readyState != 4) {
                     setTimeout(statusChecker, 10);
+                    return;
                 }
 
                 if (request.status == 200) {
