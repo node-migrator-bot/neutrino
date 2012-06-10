@@ -346,11 +346,16 @@ Master.prototype.createClientScript_ = function () {
  */
 Master.prototype.httpRequestHandler_ = function (request, response) {
 
-    var self = this;
+    var self = this,
+        now = new Date();
 
     response.setHeader('Server', 'neutrino');
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Expires', 'Thu, 01 Jan 1970 00:00:01 GMT');
+    response.setHeader('Last-Modified', now.toGMTString());
+    response.setHeader('Date', now.toGMTString());
+    response.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    response.setHeader('Pragma', 'no-cache');
 
     var parsedUrl = url.parse(request.url);
     switch (parsedUrl.pathname) {
