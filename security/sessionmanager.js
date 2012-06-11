@@ -32,6 +32,7 @@ module.exports = SessionManager;
 
 var util = require('util'),
     mongodb = require('mongodb'),
+    crypto = require('crypto'),
     events = require('events');
 
 util.inherits(SessionManager, events.EventEmitter);
@@ -61,7 +62,7 @@ function SessionManager(config) {
         self.isStorageReady_ = true;
     });
 
-    self.checExpiredIntervalHandle_ = setInterval(function () {
+    self.checkExpiredIntervalHandle_ = setInterval(function () {
         self.checkExpired();
     }, self.checkExpiredInterval_);
 }
@@ -108,7 +109,12 @@ SessionManager.prototype.dbProvider_ = null;
  */
 SessionManager.prototype.storage_ = null;
 
-SessionManager.prototype.checExpiredIntervalHandle_ = null;
+/**
+ * Handle of garbage collector interval.
+ * @type {*}
+ * @private
+ */
+SessionManager.prototype.checkExpiredIntervalHandle_ = null;
 
 /**
  * Create new session for user.
@@ -122,6 +128,7 @@ SessionManager.prototype.create = function (sessionObject, callback) {
         expiredDate = now + self.expiredTimeout_,
         execute = function () {
             sessionObject.expired = expiredDate;
+            sessionObject.sid = self.createSessionId();
             self.storage_.insert(sessionObject, {safe:true}, function (error, objects) {
 
                 if (error) {
@@ -130,7 +137,7 @@ SessionManager.prototype.create = function (sessionObject, callback) {
 
                 var object = objects[0];
 
-                callback(error, object, !error ? object._id.toHexString() : null);
+                callback(error, object, !error ? object.sid : null);
 
             });
         };
@@ -152,9 +159,7 @@ SessionManager.prototype.remove = function (sessionId, callback) {
     var self = this,
         execute = function () {
 
-            var id = mongodb.ObjectID.createFromHexString(sessionId);
-            //noinspection JSCheckFunctionSignatures
-            self.storage_.remove({_id:id}, {safe:true}, function (error) {
+            self.storage_.remove({sid:sessionId}, {safe:true}, function (error) {
 
                 if (error) {
                     self.emit('error', error);
@@ -182,8 +187,7 @@ SessionManager.prototype.get = function (sessionId, callback) {
     var self = this,
         execute = function () {
 
-            var id = mongodb.ObjectID.createFromHexString(sessionId);
-            self.storage_.findOne({_id:id}, function (error, object) {
+            self.storage_.findOne({sid:sessionId}, function (error, object) {
 
                 if (error) {
                     self.emit('error', error);
@@ -216,10 +220,9 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
 
             setParameters.expired = expiredDate;
 
-            var id = mongodb.ObjectID.createFromHexString(sessionId);
-            self.storage_.findAndModify({_id:id}, [
+            self.storage_.findAndModify({sid:sessionId}, [
                 ['_id', 'asc']
-            ], {$set:setParameters}, {new:true},
+            ], {$set:setParameters}, {new:true, upsert:false},
                 function (error, object) {
 
                     if (error) {
@@ -242,7 +245,7 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
 /**
  * Get or set object for specified session ID.
  * @param {String} sessionId Session ID to set or get object.
- * @param {function(Boolean,Object)} callback Operation result handler.
+ * @param {function(Error,Object)} callback Operation result handler.
  * @param {Object} setParameters Object to set for specified session ID (Optional).
  */
 SessionManager.prototype.$ = function (sessionId, callback, setParameters) {
@@ -280,5 +283,20 @@ SessionManager.prototype.checkExpired = function () {
  */
 SessionManager.prototype.stopCheckExpireInterval = function () {
     var self = this;
-    clearInterval(self.checExpiredIntervalHandle_);
+    clearInterval(self.checkExpiredIntervalHandle_);
+};
+
+/**
+ * Create new unique session ID.
+ * @return {String}
+ */
+SessionManager.prototype.createSessionId = function () {
+
+    var now = new Date(),
+        uniqueKey = util.format('%d:%d:%d', now.getTime(), Math.random(), Math.random()),
+        hash = crypto.createHash('sha512');
+
+    hash.update(uniqueKey, "utf8");
+    return hash.digest('hex');
+
 };

@@ -158,20 +158,9 @@ ViewHub.prototype.normalizeRequest_ = function (socket, request, callback) {
         socket.sessionIds = {};
     }
 
-    if (!request.sessionId || !(/[a-z0-9]{24}/i.test(request.sessionId))) {
-        neutrino.sessionManager.create({lastAccess:now}, function (error, sessionObject, sessionId) {
-            request.sessionId = sessionId;
-
-            socket.sessionIds[sessionId] = true;
-
-            callback(request);
-        });
-        return;
-    }
-    neutrino.sessionManager.set(request.sessionId, {lastAccess:now}, function (error) {
-
-        if (error) {
-            neutrino.sessionManager.create({lastAccess:now}, function (error, sessionId) {
+    neutrino.sessionManager.set(request.sessionId, {lastAccess:now}, function (error, sessionObject) {
+        if (error || !sessionObject) {
+            neutrino.sessionManager.create({lastAccess:now}, function (error, sessionObject, sessionId) {
                 request.sessionId = sessionId;
 
                 socket.sessionIds[sessionId] = true;
@@ -182,7 +171,6 @@ ViewHub.prototype.normalizeRequest_ = function (socket, request, callback) {
         }
         socket.sessionIds[request.sessionId] = true;
         callback(request);
-
     });
 
 };

@@ -679,10 +679,9 @@ neutrino.exports = exports;
         }
 
         var self = this;
-        if (!self.sessionId) {
-            self.sessionId = response.sessionId;
-            self.cookieProvider_.setCookie('sid', response.sessionId);
-        }
+
+        self.sessionId = response.sessionId;
+        self.cookieProvider_.setCookie('sid', response.sessionId);
 
         self.emit('response' + response.requestId, response.responseBody);
 
