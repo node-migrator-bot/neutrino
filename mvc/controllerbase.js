@@ -259,7 +259,8 @@ ControllerBase.prototype.getModel = function (sessionId, requestId) {
         model = {},
         execute = function () {
 
-            var modelObject = self.model_.serialize();
+            var modelObject = self.model_.serialize(),
+                getValidators = [];
 
             for (var key in modelObject) {
 
@@ -276,20 +277,35 @@ ControllerBase.prototype.getModel = function (sessionId, requestId) {
                 if (getValidatorName in self) {
                     // because key is mutable we must use immediate function
                     (function (currentKey) {
-                        self[getValidatorName](sessionId, function (error) {
-                            if (!error) {
-                                model[currentKey] = modelObject[currentKey];
-                            }
+                        // if controller has validator for this property save it.
+                        getValidators.push({
+                            currentKey:currentKey,
+                            validator:self[getValidatorName]
                         });
                     })(key);
 
                 } else {
                     model[key] = modelObject[key];
                 }
-
             }
-            //TODO solve asynchronous validator issue
-            self.view_.showResponse({success:true, model:model}, sessionId, requestId);
+            if (getValidators.length === 0) {
+                self.view_.showResponse({success:true, model:model}, sessionId, requestId);
+                return;
+            }
+
+            var validatorCalledCount = 0; // counter to know when all validators will finish their work.
+            // processing properties with validators.
+            getValidators.forEach(function (item) {
+                item.validator(sessionId, function (error) {
+                    if (!error) {
+                        model[item.currentKey] = modelObject[item.currentKey];
+                    }
+                    validatorCalledCount++;
+                    if (validatorCalledCount === getValidators.length) {
+                        self.view_.showResponse({success:true, model:model}, sessionId, requestId);
+                    }
+                });
+            });
         };
 
     if (neutrino.mvc.modelAccessValidatorName in self) {

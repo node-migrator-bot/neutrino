@@ -30,6 +30,7 @@
 module.exports = Master;
 
 var util = require('util'),
+    fs = require('fs'),
     path = require('path'),
     url = require('url'),
     http = require('http');
