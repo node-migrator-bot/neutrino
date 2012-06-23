@@ -374,7 +374,8 @@ neutrino.exports = exports;
                 return;
             }
 
-            var workerAddressUrl = 'http://' + result.host + ':' + result.port;
+            var isSecure = !!result.secure;
+            var workerAddressUrl = (isSecure ? 'https' : 'http') + '://' + result.host + ':' + result.port;
 
             self.socketNamespace_ = io.connect(workerAddressUrl, {
                 resource:"viewhub",

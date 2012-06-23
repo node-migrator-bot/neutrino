@@ -42,13 +42,15 @@ util.inherits(Worker, events.EventEmitter);
 function Worker(config) {
 
     var self = this,
-        workerConfig = config.$('worker') || {};
+        workerConfig = config.$('worker') || {},
+        sslConfig = workerConfig.ssl || {};
 
     events.EventEmitter.call(self);
 
     self.id = util.format('%d:%d:%d', process.pid, new Date().getTime(), Math.random());
     self.host_ = workerConfig.host || self.host_;
     self.port_ = workerConfig.port_ || self.port_;
+    self.secure_ = self.secure_ = typeof (sslConfig.enabled) === 'undefined' ? self.secure_ : sslConfig.enabled;
     self.loadSendInterval_ = workerConfig.loadSendInterval || self.loadSendInterval_;
 
     self.logicSet_ = new neutrino.core.LogicSet(config, self);
@@ -131,6 +133,13 @@ Worker.prototype.host_ = neutrino.defaults.worker.host;
 Worker.prototype.port_ = neutrino.defaults.worker.port;
 
 /**
+ * Is worker client connection secure.
+ * @type {Boolean}
+ * @private
+ */
+Worker.prototype.secure_ = neutrino.defaults.worker.ssl.enabled;
+
+/**
  * Send load estimation to master.
  * @private
  */
@@ -154,7 +163,7 @@ Worker.prototype.addressUpdate_ = function () {
 
     self.eventBusClient_.sendToMaster({
         type:'address',
-        value:{host:self.host_, port:self.port_}
+        value:{host:self.host_, port:self.port_, secure:self.secure_}
     });
 
 };

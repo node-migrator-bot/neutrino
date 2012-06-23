@@ -13,14 +13,19 @@
 
     "master":{
         "httpPort":8080,
-        "clientScriptFolder":"./client.min",
+        "clientScriptFolder":"./client",
         "eventServicesFolder":"./eventServices"
     },
 
     "worker":{
         "host":"localhost",
         "port":null,
-        "loadSendInterval":60000
+        "loadSendInterval":60000,
+        "ssl":{
+            "enabled":true,
+            "keyPath":"./ssl/neutrino-key.pem",
+            "certPath":"./ssl/neutrino-cert.pem"
+        }
     },
 
     "mvc":{
@@ -37,9 +42,9 @@
         "masterSecret":"masterSecret",
         "workerSecret":"workerSecret",
         "tls":{
-            "enabled":false,
-            "keyPath":"./tlskey/neutrino-key.pem",
-            "certPath":"./tlskey/neutrino-cert.pem",
+            "enabled":true,
+            "keyPath":"./ssl/neutrino-key.pem",
+            "certPath":"./ssl/neutrino-cert.pem",
             "requestCert":false,
             "caPaths":[]
         }

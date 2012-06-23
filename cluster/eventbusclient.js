@@ -201,15 +201,27 @@ EventBusClient.prototype.connect = function () {
 
     var self = this;
 
-    self.socketNamespace_ = self.tlsConfig_.enabled ?
-        tls.connect(self.serverPort_, self.serverHost_, self.tlsConfig_,
-            function () {
-                self.connectionHandler_();
-            }) :
-        net.connect(self.serverPort_, self.serverHost_,
+    if (self.tlsConfig_.enabled) {
+
+        self.socketNamespace_ = tls.connect(self.serverPort_, self.serverHost_, self.tlsConfig_,
             function () {
                 self.connectionHandler_();
             });
+        self.socketNamespace_.socket.on('close', function () {
+            self.closeHandler_();
+        });
+
+    } else {
+
+        self.socketNamespace_ = net.connect(self.serverPort_, self.serverHost_,
+            function () {
+                self.connectionHandler_();
+            });
+        self.socketNamespace_.on('close', function () {
+            self.closeHandler_();
+        });
+
+    }
 
     self.socketNamespace_.setEncoding(self.charset_);
 
@@ -220,9 +232,6 @@ EventBusClient.prototype.connect = function () {
         });
     });
 
-    self.socketNamespace_.on('close', function () {
-        self.closeHandler_();
-    });
 };
 
 /**

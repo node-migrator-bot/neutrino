@@ -32,6 +32,9 @@ module.exports = ViewHub;
 var util = require('util'),
     events = require('events'),
     http = require('http'),
+    https = require('https'),
+    fs = require('fs'),
+    path = require('path'),
     socketio = require('socket.io');
 
 util.inherits(ViewHub, events.EventEmitter);
@@ -45,17 +48,33 @@ util.inherits(ViewHub, events.EventEmitter);
 function ViewHub(config) {
 
     var self = this,
-        workerConfig = config.$('worker') || {};
+        workerConfig = config.$('worker') || {},
+        sslConfig = workerConfig.ssl || neutrino.defaults.worker.ssl;
 
     events.EventEmitter.call(self);
 
     self.port_ = workerConfig.port || workerConfig.port === null ? workerConfig.port : self.port_;
     self.host_ = workerConfig.host || workerConfig.host === null ? workerConfig.host : self.host_;
+    self.secure_ = typeof (sslConfig.enabled) === 'undefined' ? self.secure_ : sslConfig.enabled;
 
-    var httpServer = http.createServer(function (request, response) {
-        response.setHeader('Server', 'neutrino');
-        response.setHeader('Access-Control-Allow-Origin', '*');
-    });
+    var httpServer,
+        httpHandler = function (request, response) {
+            response.setHeader('Server', 'neutrino');
+            response.setHeader('Access-Control-Allow-Origin', '*');
+        };
+
+    if (self.secure_) {
+        var keyPath = path.resolve(sslConfig.keyPath || neutrino.defaults.worker.ssl.keyPath),
+            certPath = path.resolve(sslConfig.certPath || neutrino.defaults.worker.ssl.certPath);
+        var options = {
+            key:fs.readFileSync(keyPath),
+            cert:fs.readFileSync(certPath)
+        };
+
+        httpServer = https.createServer(options, httpHandler);
+    } else {
+        httpServer = http.createServer(httpHandler);
+    }
 
     httpServer.listen(self.port_ === null ? undefined : self.port_, function () {
         var address = httpServer.address();
@@ -93,6 +112,13 @@ ViewHub.prototype.host_ = neutrino.defaults.worker.host;
  * @private
  */
 ViewHub.prototype.port_ = neutrino.defaults.worker.port;
+
+/**
+ * Is current socket.io port secure.
+ * @type {Boolean}
+ * @private
+ */
+ViewHub.prototype.secure_ = neutrino.defaults.worker.ssl.enabled;
 
 /**
  * Send request response to client.
