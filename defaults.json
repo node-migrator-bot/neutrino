@@ -22,7 +22,7 @@
         "port":null,
         "loadSendInterval":60000,
         "ssl":{
-            "enabled":true,
+            "enabled":false,
             "keyPath":"./ssl/neutrino-key.pem",
             "certPath":"./ssl/neutrino-cert.pem"
         }

@@ -245,6 +245,7 @@ Master.prototype.loadHandler_ = function (messageObject, workerId) {
 
 };
 
+//noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 /**
  * Handle data messages from models and rout it to event services.
  * @param {Object} messageObject Message from worker.
@@ -281,7 +282,7 @@ Master.prototype.initEventServices_ = function () {
     fs.readdir(self.eventServicesFolder_, function (error, files) {
 
         if (error) {
-            throw new Error('Event services folder "' + self.eventServicesFolder_ + '" was not found!');
+            return;
         }
 
         files.forEach(function (file) {
@@ -294,6 +295,8 @@ Master.prototype.initEventServices_ = function () {
                 serviceName = path.basename(file, '.js'),
                 Service = require(servicePath),
                 service = new Service(self.config_);
+
+            neutrino.logger.trace(util.format('Event service "%s" loaded', servicePath));
 
             service.on('data', function (modelName, data) {
                 self.eventBusServer_.sendToWorker({

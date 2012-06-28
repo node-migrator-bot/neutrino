@@ -230,7 +230,7 @@ LogicSet.prototype.initModels_ = function () {
     fs.readdir(self.modelsFolder_, function (error, files) {
 
         if (error) {
-            throw new Error('Models folder "' + self.modelsFolder_ + '" was not found!');
+            return;
         }
 
         files.forEach(function (file) {
@@ -248,16 +248,22 @@ LogicSet.prototype.initModels_ = function () {
                 controllerConstructor,
                 viewConstructor;
 
+            neutrino.logger.trace(util.format('Model "%s" loaded', modelPath));
+
             try {
                 controllerConstructor = require(controllerPath);
+                neutrino.logger.trace(util.format('Custom controller "%s" loaded', controllerPath));
             } catch (e) {
                 controllerConstructor = neutrino.mvc.ControllerBase;
+                neutrino.logger.trace(util.format('Base controller for model "%s" loaded', modelPath));
             }
 
             try {
                 viewConstructor = require(viewPath);
+                neutrino.logger.trace(util.format('Custom view "%s" loaded', viewPath));
             } catch (e) {
                 viewConstructor = neutrino.mvc.ViewBase;
+                neutrino.logger.trace(util.format('Base view for model "%s" loaded', modelPath));
             }
 
             //noinspection UnnecessaryLocalVariableJS

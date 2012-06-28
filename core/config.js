@@ -36,7 +36,8 @@
 
 module.exports = Config;
 
-var path = require('path');
+var path = require('path'),
+    fs = require('fs');
 
 /**
  * Read-only config storage.
@@ -54,7 +55,8 @@ function Config(config) {
     // else it's empty object
     if (config && typeof(config) === 'string') {
 
-        if (!path.existsSync(config)) {
+        var existsPredicate = fs.existsSync || path.existsSync;
+        if (!existsPredicate(config)) {
 
             throw new Error('Config "' + config + '" not found!');
         }
