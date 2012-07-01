@@ -264,7 +264,7 @@ ViewHub.prototype.disconnectHandler_ = function (socketAddress, sessionId) {
     var self = this,
         requestId = self.generateRequestId_();
 
-    self.emit('unsubscribe', '*', sessionId, requestId);
+    self.emit('unsubscribeRequest', '*', sessionId, requestId);
     self.emit('disconnected', socketAddress);
 
 };
