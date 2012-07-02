@@ -22,5 +22,5 @@ Test.prototype.privateTest_ = function (callback, returnValue) {
 
 Test.prototype.sendToServiceTest = function (serviceName, dataValue) {
     var self = this;
-    self.emit('sendData', serviceName, dataValue);
+    self.emit(neutrino.mvc.ModelBase.events.sentToService, serviceName, dataValue);
 };

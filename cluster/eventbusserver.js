@@ -69,10 +69,22 @@ function EventBusServer(config) {
             self.incomingConnectionHandler_(socket);
         });
 
-    self.on('messageFromMaster', function (messageObject, workerId) {
+    self.on(EventBusServer.events.messageFromMaster, function (messageObject, workerId) {
         self.processMessageFromMaster_(messageObject, workerId);
     });
 }
+
+/**
+ * Enum of event bus server events.
+ * @enum {String}
+ */
+EventBusServer.events = {
+    serviceMessage:'serviceMessage',
+    messageFromMaster:'messageFromMaster',
+    messageFromWorker:'messageFromWorker',
+    workerConnected:'workerConnected',
+    workerDisconnected:'workerDisconnected'
+};
 
 /**
  * Secret token for master of event bus.
@@ -185,7 +197,7 @@ EventBusServer.prototype.start = function () {
     self.server_.listen(self.serverPort_, function () {
         var serverAddress = self.server_.address();
         self.serverAddressString_ = util.format('%s:%d', serverAddress.address, serverAddress.port);
-        self.emit('serviceMessage', {
+        self.emit(EventBusServer.events.serviceMessage, {
             connection:self.serverAddressString_,
             message:self.tlsConfig_.enabled ? 'EBS started with TLS/SSL' : ' EBS started'
         });
@@ -201,7 +213,7 @@ EventBusServer.prototype.start = function () {
 EventBusServer.prototype.sendToWorker = function (messageObject, workerId) {
 
     var self = this;
-    self.emit('messageFromMaster', messageObject, workerId);
+    self.emit(EventBusServer.events.messageFromMaster, messageObject, workerId);
 };
 
 //noinspection JSValidateJSDoc
@@ -220,11 +232,11 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
 
     socket.on('close', function () {
         self.removeSocket_(socket, workerId);
-        self.emit('serviceMessage', {
+        self.emit(EventBusServer.events.serviceMessage, {
             connection:util.format('%s->%s', socketAddress, self.serverAddressString_),
             message:'Worker disconnected'
         });
-        self.emit('workerDisconnected', workerId);
+        self.emit(EventBusServer.events.workerDisconnected, workerId);
     });
 
     socket.on('data', function (data) {
@@ -238,11 +250,11 @@ EventBusServer.prototype.incomingConnectionHandler_ = function (socket) {
 
     self.workers_[workerId] = {socket:socket, isAuthorized:false};
 
-    self.emit('serviceMessage', {
+    self.emit(EventBusServer.events.serviceMessage, {
         connection:util.format('%s->%s', socketAddress, self.serverAddressString_),
         message:'Worker connected'
     });
-    self.emit('workerConnected', workerId);
+    self.emit(EventBusServer.events.workerConnected, workerId);
 };
 
 //noinspection JSValidateJSDoc
@@ -273,14 +285,14 @@ EventBusServer.prototype.processMessageFromWorker_ = function (socket, message) 
         throw e;
     }
     self.workers_[workerId].isAuthorized = true;
-    self.emit('serviceMessage', {
+    self.emit(EventBusServer.events.serviceMessage, {
         connection:util.format('%s:%d->%s',
             socket.remoteAddress,
             socket.remotePort,
             self.serverAddressString_),
         message:util.format('Worker sent message, type - %s', messageObject.type)
     });
-    self.emit('masterMessage', messageObject, workerId);
+    self.emit(EventBusServer.events.messageFromWorker, messageObject, workerId);
 };
 
 /**
@@ -308,7 +320,7 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
         socket.write(message + '\r\n');
 
 
-        self.emit('serviceMessage', {
+        self.emit(EventBusServer.events.serviceMessage, {
             connection:util.format('%s->%s:%d',
                 self.serverAddressString_,
                 socketAddress.address,
@@ -326,7 +338,7 @@ EventBusServer.prototype.processMessageFromMaster_ = function (messageObject, wo
             }
             socket.write(message + '\r\n');
         });
-        self.emit('serviceMessage', {
+        self.emit(EventBusServer.events.serviceMessage, {
             connection:self.serverAddressString_,
             message:util.format('Master sent broadcast message, type - %s', messageObject.type)
         });

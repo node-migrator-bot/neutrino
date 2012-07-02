@@ -16,6 +16,6 @@ function TestService() {
 TestService.prototype.handleData = function (modelName, data) {
 
     var self = this;
-    self.emit('data', modelName, {message:data});
+    self.emit(neutrino.cluster.Master.events.eventServiceData, modelName, {message:data});
 
 };

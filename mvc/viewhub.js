@@ -79,14 +79,14 @@ function ViewHub(config) {
     httpServer.listen(self.port_ === null ? undefined : self.port_, function () {
         var address = httpServer.address();
 
-        self.emit('httpServerStarted',
+        self.emit(ViewHub.events.httpServerStarted,
             self.host_ === null ? address.address : self.host_, address.port);
     });
 
     var io = socketio.listen(httpServer, {
         origins:['*:*', '*'],
         logger:neutrino.logger,
-        resource:"/viewhub",
+        resource:'/viewhub',
         'browser client handler':function (request, response) {
             response.statusCode = 204;
             response.end();
@@ -98,6 +98,35 @@ function ViewHub(config) {
         self.newConnectionHandler_(socket);
     });
 }
+
+/**
+ * Enum of view hub events.
+ * @enum {String}
+ */
+ViewHub.events = {
+    sendNewValue:'sendNewValue',
+    clientConnected:'clientConnected',
+    clientDisconnected:'clientDisconnected',
+    modelRequest:'modelRequest',
+    invokeRequest:'invokeRequest',
+    editRequest:'editRequest',
+    subscribeRequest:'subscribeRequest',
+    unsubscribeRequest:'unsubscribeRequest',
+    httpServerStarted:'httpServerStarted'
+};
+
+/**
+ * Enum of view hub client events.
+ * @enum {String}
+ */
+ViewHub.clientEvents = {
+    newValue:'newValue',
+    modelResponse:'modelResponse',
+    invokeResponse:'invokeResponse',
+    editResponse:'editResponse',
+    subscribeResponse:'subscribeResponse',
+    unsubscribeResponse:'unsubscribeResponse'
+};
 
 /**
  * Current socket.io host address.
@@ -152,7 +181,7 @@ ViewHub.prototype.sendResponse = function (viewName, responseObject, sessionId, 
 ViewHub.prototype.sendNewValue = function (viewName, propertyName, oldValue, newValue, sessionId) {
 
     var self = this;
-    self.emit('sendNewValue', viewName, propertyName, oldValue, newValue, sessionId);
+    self.emit(ViewHub.events.sendNewValue, viewName, propertyName, oldValue, newValue, sessionId);
 
 };
 
@@ -224,33 +253,33 @@ ViewHub.prototype.newConnectionHandler_ = function (socket) {
         self.disconnectHandler_(socketAddress, sessionId);
     });
 
-    socket.on('getModelRequest', function (request) {
+    socket.on(ViewHub.events.modelRequest, function (request) {
         self.getModelRequestHandler_(socket, request);
     });
 
-    socket.on('invokeMethodRequest', function (request) {
+    socket.on(ViewHub.events.invokeRequest, function (request) {
         self.invokeMethodRequestHandler_(socket, request);
     });
 
-    socket.on('editRequest', function (request) {
+    socket.on(ViewHub.events.editRequest, function (request) {
         self.editRequestHandler_(socket, request);
     });
 
-    socket.on('subscribeRequest', function (request) {
+    socket.on(ViewHub.events.subscribeRequest, function (request) {
         self.subscribeRequestHandler_(socket, request);
     });
 
-    socket.on('unsubscribeRequest', function (request) {
+    socket.on(ViewHub.events.unsubscribeRequest, function (request) {
         self.unsubscribeRequestHandler_(socket, request);
     });
 
-    self.on('sendNewValue', function (viewName, propertyName, oldValue, newValue, sessionId) {
+    self.on(ViewHub.events.sendNewValue, function (viewName, propertyName, oldValue, newValue, sessionId) {
         if (socket.sessionIds && socket.sessionIds.hasOwnProperty(sessionId)) {
-            socket.emit('newValue', viewName, propertyName, oldValue, newValue);
+            socket.emit(ViewHub.clientEvents.newValue, viewName, propertyName, oldValue, newValue);
         }
     });
 
-    self.emit('connected', socketAddress);
+    self.emit(ViewHub.events.clientConnected, socketAddress);
 };
 
 /**
@@ -264,8 +293,8 @@ ViewHub.prototype.disconnectHandler_ = function (socketAddress, sessionId) {
     var self = this,
         requestId = self.generateRequestId_();
 
-    self.emit('unsubscribeRequest', '*', sessionId, requestId);
-    self.emit('disconnected', socketAddress);
+    self.emit(ViewHub.events.unsubscribeRequest, '*', sessionId, requestId);
+    self.emit(ViewHub.events.clientDisconnected, socketAddress);
 
 };
 
@@ -303,9 +332,9 @@ ViewHub.prototype.getModelRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'getModelResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, ViewHub.clientEvents.modelResponse, function (validRequest) {
 
-        self.emit('modelRequest', validRequest.viewName, validRequest.sessionId, validRequest.id);
+        self.emit(ViewHub.events.modelRequest, validRequest.viewName, validRequest.sessionId, validRequest.id);
 
     });
 };
@@ -321,9 +350,9 @@ ViewHub.prototype.invokeMethodRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'invokeMethodResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, ViewHub.clientEvents.invokeResponse, function (validRequest) {
 
-        self.emit('invokeRequest', validRequest.viewName, validRequest.methodName,
+        self.emit(ViewHub.events.invokeRequest, validRequest.viewName, validRequest.methodName,
             validRequest.args, validRequest.sessionId, validRequest.id);
 
     });
@@ -341,9 +370,9 @@ ViewHub.prototype.editRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'editResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, ViewHub.clientEvents.editResponse, function (validRequest) {
 
-        self.emit('editRequest', validRequest.viewName, validRequest.propertyName,
+        self.emit(ViewHub.events.editRequest, validRequest.viewName, validRequest.propertyName,
             validRequest.newValue, validRequest.sessionId, validRequest.id);
     });
 };
@@ -359,9 +388,9 @@ ViewHub.prototype.subscribeRequestHandler_ = function (socket, request) {
 
     var self = this;
 
-    self.basicRequestHandler(socket, request, 'subscribeResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, ViewHub.clientEvents.subscribeResponse, function (validRequest) {
 
-        self.emit('subscribeRequest', validRequest.viewName, validRequest.sessionId, validRequest.id);
+        self.emit(ViewHub.events.subscribeRequest, validRequest.viewName, validRequest.sessionId, validRequest.id);
     });
 };
 
@@ -375,8 +404,8 @@ ViewHub.prototype.subscribeRequestHandler_ = function (socket, request) {
 ViewHub.prototype.unsubscribeRequestHandler_ = function (socket, request) {
 
     var self = this;
-    self.basicRequestHandler(socket, request, 'unsubscribeResponse', function (validRequest) {
+    self.basicRequestHandler(socket, request, ViewHub.clientEvents.unsubscribeResponse, function (validRequest) {
 
-        self.emit('unsubscribeRequest', validRequest.viewName || '*', validRequest.sessionId, validRequest.id);
+        self.emit(ViewHub.events.unsubscribeRequest, validRequest.viewName || '*', validRequest.sessionId, validRequest.id);
     });
 };

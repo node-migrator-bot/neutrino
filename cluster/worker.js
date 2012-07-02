@@ -56,18 +56,20 @@ function Worker(config) {
     self.logicSet_ = new neutrino.core.LogicSet(config, self);
     self.eventBusClient_ = new neutrino.cluster.EventBusClient(config);
 
-    self.eventBusClient_.on('serviceMessage', function (messageObject) {
+    var eventBusClientEvents = neutrino.cluster.EventBusClient.events;
+
+    self.eventBusClient_.on(eventBusClientEvents.serviceMessage, function (messageObject) {
         neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
     });
 
-    self.eventBusClient_.on('workerMessage', function (messageObject) {
+    self.eventBusClient_.on(eventBusClientEvents.messageFromMaster, function (messageObject) {
         if (!self.validateMessage_(messageObject)) {
             return;
         }
         self.messageHandler_(messageObject);
     });
 
-    self.eventBusClient_.on('connected', function () {
+    self.eventBusClient_.on(eventBusClientEvents.workerConnected, function () {
 
         self.addressUpdate_();
         self.loadEstimationUpdate_();
@@ -78,6 +80,14 @@ function Worker(config) {
         self.loadEstimationUpdate_();
     }, self.loadSendInterval_);
 }
+
+/**
+ * Enum of worker events.
+ * @enum {String}
+ */
+Worker.events = {
+    messageForModels:'messageForModels'
+};
 
 /**
  * Current worker ID.
@@ -148,7 +158,7 @@ Worker.prototype.loadEstimationUpdate_ = function () {
     var self = this;
 
     self.eventBusClient_.sendToMaster({
-        type:'load',
+        type:neutrino.cluster.messageTypes.load,
         value:self.loadEstimation
     });
 };
@@ -162,7 +172,7 @@ Worker.prototype.addressUpdate_ = function () {
     var self = this;
 
     self.eventBusClient_.sendToMaster({
-        type:'address',
+        type:neutrino.cluster.messageTypes.address,
         value:{host:self.host_, port:self.port_, secure:self.secure_}
     });
 
@@ -212,11 +222,7 @@ Worker.prototype.messageHandler_ = function (messageObject) {
 
     var self = this;
 
-    if (messageObject.type !== 'sync' && messageObject.type !== 'data') {
-        return;
-    }
-
-    self.emit(messageObject.type, messageObject.sender, messageObject.value);
+    self.emit(Worker.events.messageForModels, messageObject.type, messageObject.sender, messageObject.value);
 };
 
 /**
@@ -229,7 +235,7 @@ Worker.prototype.sendSyncMessage = function (modelName, data) {
     var self = this;
 
     self.eventBusClient_.sendToMaster({
-        type:'sync',
+        type:neutrino.cluster.messageTypes.sync,
         sender:self.id,
         value:{modelName:modelName, data:data}
     });
@@ -246,7 +252,7 @@ Worker.prototype.sendDataMessage = function (modelName, serviceName, data) {
     var self = this;
 
     self.eventBusClient_.sendToMaster({
-        type:'data',
+        type:neutrino.cluster.messageTypes.data,
         sender:self.id,
         value:{modelName:modelName, serviceName:serviceName, data:data}
     });

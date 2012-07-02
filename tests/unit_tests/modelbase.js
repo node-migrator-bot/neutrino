@@ -45,7 +45,9 @@ neutrino.logger = {
     }
 };
 
-var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig);
+var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig),
+    logicSetEvents = neutrino.core.LogicSet.events,
+    modelEvents = neutrino.mvc.ModelBase.events;
 
 exports['Model synchronization engine and change event'] = function (test) {
 
@@ -66,12 +68,12 @@ exports['Model synchronization engine and change event'] = function (test) {
 
     test.expect(6);
 
-    worker1.logicSet_.on('modelLoaded', function () {
+    worker1.logicSet_.on(logicSetEvents.loaded, function () {
         loaded++;
         startTest();
     });
 
-    worker2.logicSet_.on('modelLoaded', function () {
+    worker2.logicSet_.on(logicSetEvents.loaded, function () {
         loaded++;
         startTest();
     });
@@ -84,7 +86,7 @@ exports['Model synchronization engine and change event'] = function (test) {
         test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue');
         test.deepEqual(worker2.logicSet_.models_['test'].test.$(), 'testValue');
 
-        worker2.logicSet_.models_['test'].on('changed', function (propertyName, oldValue, newValue) {
+        worker2.logicSet_.models_['test'].on(modelEvents.changed, function (propertyName, oldValue, newValue) {
 
             test.deepEqual(propertyName, 'test');
             test.deepEqual(oldValue, 'testValue');
@@ -120,20 +122,20 @@ exports['Model state saving and recovery'] = function (test) {
 
     test.expect(4);
 
-    worker1.logicSet_.on('modelLoaded', function () {
+    worker1.logicSet_.on(logicSetEvents.loaded, function () {
 
         test.deepEqual(worker1.logicSet_.models_['test'].test.$(), 'testValue');
 
         worker1.logicSet_.models_['test'].test.$('testValue3');
 
-        worker1.logicSet_.models_['test'].on('propertySaved', function (propertyName, newValue) {
+        worker1.logicSet_.models_['test'].on(modelEvents.propertySaved, function (propertyName, newValue) {
 
             test.deepEqual(propertyName, 'test');
             test.deepEqual(newValue, 'testValue3');
 
             var newWorker = neutrino.createWorker(config);
 
-            newWorker.logicSet_.on('modelLoaded', function () {
+            newWorker.logicSet_.on(logicSetEvents.loaded, function () {
                 test.deepEqual(newWorker.logicSet_.models_['test'].test.$(), 'testValue3');
                 dbProvider.getCollection(config.mvc.modelsCollectionName, function (collection) {
                     collection.drop();
@@ -166,8 +168,8 @@ exports['Receive incoming data from event service'] = function (test) {
 
     test.expect(1);
 
-    worker1.logicSet_.on('modelLoaded', function () {
-        worker1.logicSet_.models_['test'].on('data', function (sender, data) {
+    worker1.logicSet_.on(logicSetEvents.loaded, function () {
+        worker1.logicSet_.models_['test'].on(modelEvents.dataFromService, function (sender, data) {
 
             test.deepEqual(data.message, 'testMessage');
 
@@ -200,8 +202,8 @@ exports['Send data to event service'] = function (test) {
 
     test.expect(1);
 
-    worker1.logicSet_.on('modelLoaded', function () {
-        worker1.logicSet_.models_['test'].on('data', function (sender, data) {
+    worker1.logicSet_.on(logicSetEvents.loaded, function () {
+        worker1.logicSet_.models_['test'].on(modelEvents.dataFromService, function (sender, data) {
 
             if (sender !== 'testservice2') {
                 return;

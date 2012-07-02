@@ -55,28 +55,39 @@ function DbProvider(config) {
         password = dbConfig.password || neutrino.defaults.database.password,
         server = new mongodb.Server(host, port, serverOptions);
 
-    self.on('open', function (error, client) {
+    self.on(DbProvider.events.open, function (error, client) {
         self.openHandler_(user, password, error, client);
     });
 
-    self.on('auth', function (error, object) {
+    self.on(DbProvider.events.auth, function (error, object) {
         self.authHandler_(error, object);
     });
 
-    self.on('close', function () {
+    self.on(DbProvider.events.close, function () {
         self.closeHandler_();
     });
 
     self.db_ = new mongodb.Db(name, server, options);
 
     self.db_.on('close', function () {
-        self.emit('close');
+        self.emit(DbProvider.events.close);
     });
 
     self.db_.open(function (error, client) {
-        self.emit('open', error, client);
+        self.emit(DbProvider.events.open, error, client);
     });
 }
+
+/**
+ * Enum of database provider events.
+ * @enum {String}
+ */
+DbProvider.events = {
+    open:'open',
+    close:'close',
+    auth:'auth',
+    error:'error'
+};
 
 //noinspection JSValidateJSDoc
 /**
@@ -134,7 +145,7 @@ DbProvider.prototype.openHandler_ = function (user, password, error, client) {
     self.dbClient_ = client;
 
     self.db_.authenticate(user, password, function (error, result) {
-        self.emit('auth', error, result);
+        self.emit(DbProvider.events.auth, error, result);
     });
 
 };
@@ -161,7 +172,7 @@ DbProvider.prototype.errorHandler_ = function (error) {
 
     var self = this;
 
-    self.emit('error', error);
+    self.emit(DbProvider.events.error, error);
 
 };
 
@@ -184,11 +195,11 @@ DbProvider.prototype.getCollection = function (name, callback) {
         resultHandler();
     }
 
-    self.once('error', function () {
+    self.once(DbProvider.events.error, function () {
         callback(null);
     });
 
-    self.once('auth', function () {
+    self.once(DbProvider.events.auth, function () {
         resultHandler();
     });
 

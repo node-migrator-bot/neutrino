@@ -51,6 +51,14 @@ function Property(name, value) {
 }
 
 /**
+ * Enum of property events.
+ * @enum {String}
+ */
+Property.events = {
+    changed:'changed'
+};
+
+/**
  * Property name.
  * @type {String}
  * @private
@@ -80,7 +88,7 @@ Property.prototype.set = function (newValue, observable) {
     self.value_ = newValue;
 
     if (observable === undefined || observable === true) {
-        self.emit('changed', self.name_, oldValue, newValue);
+        self.emit(Property.events.changed, self.name_, oldValue, newValue);
     }
 };
 

@@ -291,7 +291,7 @@ neutrino.exports = exports;
         self.ajax_ = new AjaxProvider();
         self.subscriptions_ = {};
         self.cookieProvider_ = new CookieProvider();
-        self.on('socketReady', function () {
+        self.on(ViewHubClient.events.socketReady, function () {
             self.isSocketReady_ = true;
         });
 
@@ -299,6 +299,34 @@ neutrino.exports = exports;
         self.connect_(masterUrl);
 
     }
+
+    /**
+     * Enum of view hub client events.
+     * @enum {String}
+     */
+    ViewHubClient.events = {
+        newValue:'newValue',
+        modelResponse:'modelResponse',
+        invokeResponse:'invokeResponse',
+        editResponse:'editResponse',
+        subscribeResponse:'subscribeResponse',
+        unsubscribeResponse:'unsubscribeResponse',
+        socketReady:'socketReady',
+        connect:'connect',
+        disconnect:'disconnect'
+    };
+
+    /**
+     * Enum of view hub client requests.
+     * @enum {String}
+     */
+    ViewHubClient.requests = {
+        modelRequest:'modelRequest',
+        invokeRequest:'invokeRequest',
+        editRequest:'editRequest',
+        subscribeRequest:'subscribeRequest',
+        unsubscribeRequest:'unsubscribeRequest'
+    };
 
     /**
      * Current AJAX provider.
@@ -378,45 +406,45 @@ neutrino.exports = exports;
             var workerAddressUrl = (isSecure ? 'https' : 'http') + '://' + result.host + ':' + result.port;
 
             self.socketNamespace_ = io.connect(workerAddressUrl, {
-                resource:"viewhub",
+                resource:'viewhub',
                 reconnect:false
             });
 
-            self.socketNamespace_.on('newValue', function (viewName, propertyName, oldValue, newValue) {
+            self.socketNamespace_.on(ViewHubClient.events.newValue, function (viewName, propertyName, oldValue, newValue) {
                 self.newValueHandler_(viewName, propertyName, oldValue, newValue);
             });
 
-            self.socketNamespace_.on('invokeMethodResponse', function (response) {
+            self.socketNamespace_.on(ViewHubClient.events.invokeResponse, function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socketNamespace_.on('subscribeResponse', function (response) {
+            self.socketNamespace_.on(ViewHubClient.events.subscribeResponse, function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socketNamespace_.on('unsubscribeResponse', function (response) {
+            self.socketNamespace_.on(ViewHubClient.events.unsubscribeResponse, function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socketNamespace_.on('editResponse', function (response) {
+            self.socketNamespace_.on(ViewHubClient.events.editResponse, function (response) {
                 self.responseHandler_(response);
             });
 
-            self.socketNamespace_.on('getModelResponse', function (response) {
+            self.socketNamespace_.on(ViewHubClient.events.modelResponse, function (response) {
                 self.responseHandler_(response);
             });
 
             self.socketNamespace_.on('connect', function () {
                 self.connectHandler_();
-                self.emit('connect', result);
+                self.emit(ViewHubClient.events.connect, result);
             });
 
             self.socketNamespace_.on('disconnect', function () {
                 self.disconnectHandler_();
-                self.emit('disconnect');
+                self.emit(ViewHubClient.events.disconnect);
             });
 
-            self.emit('socketReady');
+            self.emit(ViewHubClient.events.socketReady);
 
         });
 
@@ -450,7 +478,7 @@ neutrino.exports = exports;
 
                     callback && callback(null, response.result);
                 });
-                self.socketNamespace_.emit('invokeMethodRequest', {
+                self.socketNamespace_.emit(ViewHubClient.requests.invokeRequest, {
                     viewName:viewName,
                     methodName:methodName,
                     args:args,
@@ -463,7 +491,7 @@ neutrino.exports = exports;
         if (self.isSocketReady_) {
             execute();
         } else {
-            self.once('socketReady', execute);
+            self.once(ViewHubClient.events.socketReady, execute);
         }
     };
 
@@ -492,7 +520,7 @@ neutrino.exports = exports;
 
                     callback && callback(null, response.model);
                 });
-                self.socketNamespace_.emit('getModelRequest', {
+                self.socketNamespace_.emit(ViewHubClient.requests.modelRequest, {
                     viewName:viewName,
                     sessionId:self.sessionId,
                     id:requestId
@@ -503,7 +531,7 @@ neutrino.exports = exports;
         if (self.isSocketReady_) {
             execute();
         } else {
-            self.once('socketReady', execute);
+            self.once(ViewHubClient.events.socketReady, execute);
         }
     };
 
@@ -534,7 +562,7 @@ neutrino.exports = exports;
 
                     callback && callback(null);
                 });
-                self.socketNamespace_.emit('editRequest', {
+                self.socketNamespace_.emit(ViewHubClient.requests.editRequest, {
                     viewName:viewName,
                     propertyName:propertyName,
                     newValue:newValue,
@@ -547,7 +575,7 @@ neutrino.exports = exports;
         if (self.isSocketReady_) {
             execute();
         } else {
-            self.once('socketReady', execute);
+            self.once(ViewHubClient.events.socketReady, execute);
         }
     };
 
@@ -582,14 +610,14 @@ neutrino.exports = exports;
                     self.subscriptions_[viewName].push(handler);
                     callback && callback(null);
                 });
-                self.socketNamespace_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+                self.socketNamespace_.emit(ViewHubClient.requests.subscribeRequest, {viewName:viewName, sessionId:self.sessionId, id:requestId});
 
             };
 
         if (self.isSocketReady_) {
             execute();
         } else {
-            self.once('socketReady', execute);
+            self.once(ViewHubClient.events.socketReady, execute);
         }
 
     };
@@ -602,6 +630,8 @@ neutrino.exports = exports;
      */
     ViewHubClient.prototype.unsubscribe = function (viewName, handler, callback) {
 
+        var self = this;
+
         if (!viewName || !handler) {
             callback && callback(new Error('View name and handler must be specified'));
             return;
@@ -612,8 +642,7 @@ neutrino.exports = exports;
             return;
         }
 
-        var self = this,
-            requestId = self.generateRequestId_(),
+        var requestId = self.generateRequestId_(),
             execute = function () {
                 self.once('response' + requestId, function (response) {
                     self.removeAllListeners('response' + requestId);
@@ -628,13 +657,13 @@ neutrino.exports = exports;
                     }
 
                 });
-                self.socketNamespace_.emit('unsubscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+                self.socketNamespace_.emit(ViewHubClient.requests.unsubscribeRequest, {viewName:viewName, sessionId:self.sessionId, id:requestId});
             };
 
         if (self.isSocketReady_) {
             execute();
         } else {
-            self.once('socketReady', execute);
+            self.once(ViewHubClient.events.socketReady, execute);
         }
     };
 
@@ -663,7 +692,7 @@ neutrino.exports = exports;
                 continue;
             }
             var requestId = self.generateRequestId_();
-            self.socketNamespace_.emit('subscribeRequest', {viewName:viewName, sessionId:self.sessionId, id:requestId});
+            self.socketNamespace_.emit(ViewHubClient.requests.subscribeRequest, {viewName:viewName, sessionId:self.sessionId, id:requestId});
         }
 
     };
@@ -783,8 +812,6 @@ neutrino.exports = exports;
      * @private
      */
     AjaxProvider.prototype.createRequest_ = function () {
-
-        var request;
 
         //Chrome,Firefox,Opera,Safari
         if (typeof(XMLHttpRequest) !== 'undefined') {

@@ -27,6 +27,12 @@
  * This license applies to all parts of neutrino that are not externally
  * maintained libraries.
  */
+
+/**
+ * Main neutrino namespace.
+ * @namespace
+ * @global
+ */
 neutrino = {};
 module.exports = neutrino;
 
@@ -38,6 +44,27 @@ neutrino.core.Config = require('./core/config.js');
 neutrino.core.LogicSet = require('./core/logicset.js');
 
 neutrino.cluster = {};
+
+/**
+ * Enum of cluster message types.
+ * @enum {String}
+ */
+neutrino.cluster.messageTypes = {
+    data:'data',
+    sync:'sync',
+    load:'load',
+    address:'address'
+};
+
+/**
+ * Enum of socket events.
+ * @enum {String}
+ */
+neutrino.cluster.socketEvents = {
+    close:'close',
+    data:'data'
+};
+
 neutrino.cluster.Balancer = require('./cluster/balancer.js');
 neutrino.cluster.EventBusServer = require('./cluster/eventbusserver.js');
 neutrino.cluster.EventBusClient = require('./cluster/eventbusclient.js');

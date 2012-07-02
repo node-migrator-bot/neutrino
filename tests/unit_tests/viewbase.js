@@ -46,6 +46,8 @@ neutrino.logger = {
 };
 
 var dbProvider = new neutrino.io.DbProvider(neutrino.currentConfig),
+    logicSetEvents = neutrino.core.LogicSet.events,
+    viewEvents = neutrino.mvc.ViewBase.events,
     masterConfig = new neutrino.core.Config({
         "eventBus":{
             "serverPort":8085
@@ -71,12 +73,12 @@ exports['Get model'] = function (test) {
         logicSet = worker.logicSet_;
 
     test.expect(4);
-    logicSet.on('modelLoaded', function () {
+    logicSet.on(logicSetEvents.loaded, function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+        logicSet.views_['test'].on(viewEvents.showResponse, function (responseObject, sessionId, requestId) {
 
             test.deepEqual(responseObject.success.true);
             test.deepEqual(responseObject.model.test, 'testValue');
@@ -110,12 +112,12 @@ exports['Set value and receive update'] = function (test) {
         logicSet = worker.logicSet_;
 
     test.expect(8);
-    logicSet.on('modelLoaded', function () {
+    logicSet.on(logicSetEvents.loaded, function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
+        logicSet.views_['test'].on(viewEvents.updateValue, function (propertyName, oldValue, newValue, sessionId) {
 
             test.deepEqual(logicSet.models_['test'].test.$(), 'newTestValue');
             test.deepEqual(propertyName, 'test');
@@ -128,7 +130,7 @@ exports['Set value and receive update'] = function (test) {
                 test.done();
             });
         });
-        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+        logicSet.views_['test'].on(viewEvents.showResponse, function (responseObject, sessionId, requestId) {
             test.deepEqual(responseObject.success, true);
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
@@ -156,12 +158,12 @@ exports['Invoke method and receive a result'] = function (test) {
         logicSet = worker.logicSet_;
 
     test.expect(4);
-    logicSet.on('modelLoaded', function () {
+    logicSet.on(logicSetEvents.loaded, function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+        logicSet.views_['test'].on(viewEvents.showResponse, function (responseObject, sessionId, requestId) {
             test.deepEqual(responseObject.success, true);
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(requestId, myRequestId);
@@ -195,12 +197,12 @@ exports['Get private property error delivery'] = function (test) {
         logicSet = worker.logicSet_;
 
     test.expect(4);
-    logicSet.on('modelLoaded', function () {
+    logicSet.on(logicSetEvents.loaded, function () {
 
         var myRequestId = new Date().getTime(),
             mySessionId = new Date().getTime() + Math.random();
 
-        logicSet.views_['test'].on('showResponse', function (responseObject, sessionId, requestId) {
+        logicSet.views_['test'].on(viewEvents.showResponse, function (responseObject, sessionId, requestId) {
             test.deepEqual(requestId, myRequestId);
             test.deepEqual(sessionId, mySessionId);
             test.deepEqual(responseObject.success, false);

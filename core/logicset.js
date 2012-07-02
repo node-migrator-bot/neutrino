@@ -58,13 +58,15 @@ function LogicSet(config, worker) {
     self.viewsFolder_ = mvcConfig.viewsFolder || self.viewsFolder_;
 
     self.viewHub_ = new neutrino.mvc.ViewHub(config);
-    self.viewHub_.on('connected', function () {
+    var viewHubEvents = neutrino.mvc.ViewHub.events;
+
+    self.viewHub_.on(viewHubEvents.clientConnected, function () {
         self.worker_.loadEstimation++;
     });
-    self.viewHub_.on('disconnected', function () {
+    self.viewHub_.on(viewHubEvents.clientDisconnected, function () {
         self.worker_.loadEstimation--;
     });
-    self.viewHub_.on('httpServerStarted', function (host, port) {
+    self.viewHub_.on(viewHubEvents.httpServerStarted, function (host, port) {
         self.worker_.setCurrentAddress(host, port);
     });
 
@@ -72,35 +74,20 @@ function LogicSet(config, worker) {
     self.controllers_ = {};
     self.views_ = {};
 
-    self.worker_.on('data', function (sender, value) {
-
-        if (value.modelName && value.modelName in self.models_) {
-            self.models_[value.modelName].dataMessageHandler(sender, value.data);
-            return;
-        }
-
-        for (var modelName in self.models_) {
-
-            if (!self.models_.hasOwnProperty(modelName)) {
-                continue;
-            }
-            self.models_[modelName].dataMessageHandler(sender, value.data);
-
-        }
-    });
-
-    self.worker_.on('sync', function (sender, value) {
-
-        if (!value.modelName || !(value.modelName in self.models_)) {
-            return;
-        }
-
-        self.models_[value.modelName].syncMessageHandler(sender, value.data);
-
+    self.worker_.on(neutrino.cluster.Worker.events.messageForModels, function (type, sender, value) {
+        self.messageForModelsHandler_(type, sender, value);
     });
 
     self.initModels_();
 }
+
+/**
+ * Enum of logic set events.
+ * @enum {String}
+ */
+LogicSet.events = {
+    loaded:'loaded'
+};
 
 /**
  * Owner worker.
@@ -166,6 +153,39 @@ LogicSet.prototype.controllers_ = null;
 LogicSet.prototype.views_ = null;
 
 /**
+ * Handle messages for specified model or all models.
+ * @param {String} type Type of message.
+ * @param {String} sender Name of sender which sends this message
+ * @param {Object} value Message object.
+ * @private
+ */
+LogicSet.prototype.messageForModelsHandler_ = function (type, sender, value) {
+
+    var self = this,
+        messageHandlerName = util.format('%sMessageHandler', type);
+
+    if (value.modelName && value.modelName in self.models_) {
+
+        if (typeof(self.models_[value.modelName][messageHandlerName]) === 'function') {
+            self.models_[value.modelName][messageHandlerName](sender, value.data);
+        }
+        return;
+    }
+
+    for (var modelName in self.models_) {
+
+        if (!self.models_.hasOwnProperty(modelName) ||
+            typeof(self.models_[modelName][messageHandlerName]) !== 'function') {
+            continue;
+        }
+
+        self.models_[modelName][messageHandlerName](sender, value.data);
+
+    }
+
+};
+
+/**
  * Link view and view bridge.
  * @param {String} viewName Name of view to link
  * @private
@@ -173,45 +193,47 @@ LogicSet.prototype.views_ = null;
 LogicSet.prototype.linkView_ = function (viewName) {
 
     var self = this,
-        view = self.views_[viewName];
+        view = self.views_[viewName],
+        viewEvents = neutrino.mvc.ViewBase.events,
+        viewHubEvents = neutrino.mvc.ViewHub.events;
 
-    view.on('updateValue', function (propertyName, oldValue, newValue, sessionId) {
+    view.on(viewEvents.updateValue, function (propertyName, oldValue, newValue, sessionId) {
         self.viewHub_.sendNewValue(viewName, propertyName, oldValue, newValue, sessionId);
     });
 
-    view.on('showResponse', function (response, sessionId, requestId) {
+    view.on(viewEvents.showResponse, function (response, sessionId, requestId) {
         self.viewHub_.sendResponse(viewName, response, sessionId, requestId);
     });
 
-    self.viewHub_.on('modelRequest', function (requestViewName, sessionId, requestId) {
+    self.viewHub_.on(viewHubEvents.modelRequest, function (requestViewName, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.getModel(sessionId, requestId);
     });
 
-    self.viewHub_.on('editRequest', function (requestViewName, propertyName, newValue, sessionId, requestId) {
+    self.viewHub_.on(viewHubEvents.editRequest, function (requestViewName, propertyName, newValue, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.setValue(propertyName, newValue, sessionId, requestId);
     });
 
-    self.viewHub_.on('invokeRequest', function (requestViewName, methodName, args, sessionId, requestId) {
+    self.viewHub_.on(viewHubEvents.invokeRequest, function (requestViewName, methodName, args, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.invoke(methodName, args, sessionId, requestId);
     });
 
-    self.viewHub_.on('subscribeRequest', function (requestViewName, sessionId, requestId) {
+    self.viewHub_.on(viewHubEvents.subscribeRequest, function (requestViewName, sessionId, requestId) {
         if (requestViewName !== viewName) {
             return;
         }
         view.subscribe(sessionId, requestId);
     });
 
-    self.viewHub_.on('unsubscribeRequest', function (requestViewName, sessionId, requestId) {
+    self.viewHub_.on(viewHubEvents.unsubscribeRequest, function (requestViewName, sessionId, requestId) {
         if (requestViewName !== viewName && requestViewName !== '*') {
             return;
         }
@@ -225,7 +247,8 @@ LogicSet.prototype.linkView_ = function (viewName) {
  */
 LogicSet.prototype.initModels_ = function () {
 
-    var self = this;
+    var self = this,
+        modelEvents = neutrino.mvc.ModelBase.events;
 
     fs.readdir(self.modelsFolder_, function (error, files) {
 
@@ -272,18 +295,18 @@ LogicSet.prototype.initModels_ = function () {
                 view = new viewConstructor(self.config_, modelName),
                 controller = new controllerConstructor(self.config_, modelName, model, view);
 
-            model.on('modelLoaded', function () {
-                self.emit('modelLoaded', {
+            model.on(LogicSet.events.loaded, function () {
+                self.emit(LogicSet.events.loaded, {
                     name:modelName,
                     path:modelPath
                 });
             });
 
-            model.on('sendSync', function (message) {
+            model.on(modelEvents.syncRequired, function (message) {
                 self.worker_.sendSyncMessage(modelName, message);
             });
 
-            model.on('sendData', function (serviceName, data) {
+            model.on(modelEvents.sentToService, function (serviceName, data) {
                 self.worker_.sendDataMessage(modelName, serviceName, data);
             });
 

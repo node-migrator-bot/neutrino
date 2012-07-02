@@ -54,6 +54,20 @@ function ViewBase(config, name) {
 }
 
 /**
+ * Enum of view events.
+ * @enum {String}
+ */
+ViewBase.events = {
+    showResponse:'showResponse',
+    updateValue:'updateValue',
+    setValue:'setValue',
+    modelRequest:'modelRequest',
+    invoke:'invoke',
+    subscribe:'subscribe',
+    unsubscribe:'unsubscribe'
+};
+
+/**
  * Current view name.
  * @type {String}
  */
@@ -68,7 +82,7 @@ ViewBase.prototype.name = '';
 ViewBase.prototype.showResponse = function (response, sessionId, requestId) {
 
     var self = this;
-    self.emit('showResponse', response, sessionId, requestId);
+    self.emit(ViewBase.events.showResponse, response, sessionId, requestId);
 
 };
 
@@ -82,7 +96,7 @@ ViewBase.prototype.showResponse = function (response, sessionId, requestId) {
 ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue, sessionId) {
 
     var self = this;
-    self.emit('updateValue', propertyName, oldValue, newValue, sessionId);
+    self.emit(ViewBase.events.updateValue, propertyName, oldValue, newValue, sessionId);
 
 };
 
@@ -96,7 +110,7 @@ ViewBase.prototype.updateValue = function (propertyName, oldValue, newValue, ses
 ViewBase.prototype.setValue = function (propertyName, newValue, sessionId, requestId) {
 
     var self = this;
-    self.emit('setValue', propertyName, newValue, sessionId, requestId);
+    self.emit(ViewBase.events.setValue, propertyName, newValue, sessionId, requestId);
 
 };
 
@@ -108,7 +122,7 @@ ViewBase.prototype.setValue = function (propertyName, newValue, sessionId, reque
 ViewBase.prototype.getModel = function (sessionId, requestId) {
 
     var self = this;
-    self.emit('modelRequest', sessionId, requestId);
+    self.emit(ViewBase.events.modelRequest, sessionId, requestId);
 
 };
 
@@ -123,7 +137,7 @@ ViewBase.prototype.getModel = function (sessionId, requestId) {
 ViewBase.prototype.invoke = function (methodName, args, sessionId, requestId) {
 
     var self = this;
-    self.emit('invoke', methodName, args, sessionId, requestId);
+    self.emit(ViewBase.events.invoke, methodName, args, sessionId, requestId);
 
 };
 
@@ -135,7 +149,7 @@ ViewBase.prototype.invoke = function (methodName, args, sessionId, requestId) {
 ViewBase.prototype.subscribe = function (sessionId, requestId) {
 
     var self = this;
-    self.emit('subscribe', sessionId, requestId);
+    self.emit(ViewBase.events.subscribe, sessionId, requestId);
 
 };
 
@@ -147,6 +161,6 @@ ViewBase.prototype.subscribe = function (sessionId, requestId) {
 ViewBase.prototype.unsubscribe = function (sessionId, requestId) {
 
     var self = this;
-    self.emit('unsubscribe', sessionId, requestId);
+    self.emit(ViewBase.events.unsubscribe, sessionId, requestId);
 
 };

@@ -57,25 +57,41 @@ function ModelBase(config, name, propertyConfig) {
     self.config_ = config;
     self.name = name;
 
-    self.on('changed', function (propertyName, oldValue, newValue, syncRequired) {
+    self.on(ModelBase.events.changed, function (propertyName, oldValue, newValue, syncRequired) {
         self.changeHandler_(propertyName, oldValue, newValue, syncRequired);
     });
 
     self.dbProvider_ = new neutrino.io.DbProvider(config);
 
-    self.on('storageReady', function () {
+    self.on(ModelBase.events.storageReady, function () {
         self.isStorageReady_ = true;
     });
 
     self.dbProvider_.getCollection(self.modelsCollectionName_, function (collection) {
         self.storage_ = collection;
-        self.emit('storageReady');
+        self.emit(ModelBase.events.storageReady);
     });
 
     self.applyPropertyConfig(propertyConfig);
     self.loadFromStorage_();
 
 }
+
+/**
+ * Enum of model events.
+ * @enum {String}
+ */
+ModelBase.events = {
+    changed:'changed',
+    loaded:'loaded',
+    saved:'saved',
+    propertySaved:'propertySaved',
+    dataFromService:'dataFromService',
+    error:'error',
+    storageReady:'storageReady',
+    syncRequired:'syncRequired',
+    sentToService:'sentToService'
+};
 
 /**
  * Current models collection name.
@@ -189,7 +205,7 @@ ModelBase.prototype.deserialize = function (modelObject) {
 ModelBase.prototype.dataMessageHandler = function (sender, data) {
 
     var self = this;
-    self.emit('data', sender, data);
+    self.emit(ModelBase.events.dataFromService, sender, data);
 
 };
 
@@ -223,7 +239,7 @@ ModelBase.prototype.syncMessageHandler = function (sender, data) {
     }
 
     self[data.propertyName].set(data.newValue, false);
-    self.emit('changed', data.propertyName, oldValue, data.newValue, false);
+    self.emit(ModelBase.events.changed, data.propertyName, oldValue, data.newValue, false);
 };
 
 /**
@@ -242,7 +258,7 @@ ModelBase.prototype.changeHandler_ = function (propertyName, oldValue, newValue,
 
         var message = self.createSyncMessage_(propertyName, oldValue, newValue);
         self.editInStorage_(propertyName, newValue);
-        self.emit('sendSync', message);
+        self.emit(ModelBase.events.syncRequired, message);
     }
 };
 
@@ -276,7 +292,7 @@ ModelBase.prototype.sendSyncPackage_ = function (messages) {
         return;
     }
 
-    self.emit('sendSync', messages);
+    self.emit(ModelBase.events.syncRequired, messages);
 };
 
 /**
@@ -294,8 +310,8 @@ ModelBase.prototype.applyPropertyConfig = function (propertyConfig) {
         }
 
         self[key] = new neutrino.mvc.Property(key, propertyConfig[key]);
-        self[key].on('changed', function (name, oldValue, newValue) {
-            self.emit('changed', name, oldValue, newValue);
+        self[key].on(neutrino.mvc.Property.events.changed, function (name, oldValue, newValue) {
+            self.emit(ModelBase.events.changed, name, oldValue, newValue);
         });
 
     }
@@ -312,7 +328,7 @@ ModelBase.prototype.loadFromStorage_ = function () {
         execute = function () {
             self.storage_.findOne({name:self.name}, function (error, modelObject) {
                 if (error) {
-                    self.emit('error', error);
+                    self.emit(ModelBase.events.error, error);
                     return;
                 }
 
@@ -321,14 +337,14 @@ ModelBase.prototype.loadFromStorage_ = function () {
                 } else {
                     self.deserialize(modelObject);
                 }
-                self.emit('modelLoaded');
+                self.emit(ModelBase.events.loaded);
             });
         };
 
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(ModelBase.events.storageReady, execute);
     }
 
 };
@@ -345,11 +361,11 @@ ModelBase.prototype.saveToStorage_ = function () {
             self.storage_.insert(modelObject, {safe:true}, function (error, object) {
 
                 if (error) {
-                    self.emit('error', error);
+                    self.emit(ModelBase.events.error, error);
                     return;
                 }
                 if (object) {
-                    self.emit('modelSaved');
+                    self.emit(ModelBase.events.saved);
                 }
             });
         };
@@ -357,7 +373,7 @@ ModelBase.prototype.saveToStorage_ = function () {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(ModelBase.events.storageReady, execute);
     }
 
 };
@@ -380,11 +396,11 @@ ModelBase.prototype.editInStorage_ = function (propertyName, newValue) {
             ], {$set:setParameters},
                 function (error, object) {
                     if (error) {
-                        self.emit('error', error);
+                        self.emit(ModelBase.events.error, error);
                         return;
                     }
                     if (object) {
-                        self.emit('propertySaved', propertyName, newValue);
+                        self.emit(ModelBase.events.propertySaved, propertyName, newValue);
                     }
                 });
         };
@@ -392,7 +408,7 @@ ModelBase.prototype.editInStorage_ = function (propertyName, newValue) {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(ModelBase.events.storageReady, execute);
     }
 
 };

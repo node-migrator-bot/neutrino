@@ -41,7 +41,9 @@ Model example
 
 	module.exports = TestModel;
 	
-	var util = require('util');
+	var util = require('util'),
+	    modelEvents = neutrino.mvc.ModelBase.events;
+
 	util.inherits(TestModel, neutrino.mvc.ModelBase);
 	
 	function TestModel(config, modelFileName) {
@@ -53,7 +55,7 @@ Model example
 			testPrivateProperty2_:'testPrivateValue2'
 	    });
 
-		this.on('data', function (sender, data) {
+		this.on(modelEvents.dataFromService, function (sender, data) {
 
 			// here processing data from event service with name equal sender
 
@@ -70,7 +72,7 @@ Model example
 	};
 	
 	TestModel.prototype.sendToEventServiceExample = function (serviceName, dataObject) {
-	    this.emit('sendData', serviceName, dataObject);
+	    this.emit(modelEvents.sentToService, serviceName, dataObject);
 	};
 
 Controller example
@@ -121,12 +123,12 @@ Event service example
 	    events.EventEmitter.call(self);
 	    setInterval(function () {
 	
-	        self.emit('data', 'testModelName', {
+	        self.emit('eventServiceData', 'testModelName', {
 	            messageText:'testMessage' 
 	        }); 
 	        // this message object will be received by model with filename 'testModelName'
 	    
-	    	self.emit('data', null, {
+	    	self.emit('eventServiceData', null, {
 	            messageText:'testMessage2' 
 	        }); 
 	        // this message object will be received by all models
@@ -152,10 +154,6 @@ Client-side usage example
 					
 					client.on('connect',function(address){
 						alert('connected: '+address.host+':'+address.port);
-					});
-					
-					client.on('reconnect',function(address){
-						alert('reconnected: '+address.host+':'+address.port);
 					});
 					
 					client.on('disconnect',function(){

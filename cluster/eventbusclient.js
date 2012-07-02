@@ -66,6 +66,17 @@ function EventBusClient(config) {
 }
 
 /**
+ * Enum of event bus client events.
+ * @enum {String}
+ */
+EventBusClient.events = {
+    serviceMessage:'serviceMessage',
+    workerConnected:'workerConnected',
+    workerDisconnected:'workerDisconnected',
+    messageFromMaster:'messageFromMaster'
+};
+
+/**
  * Secret token for master of event bus.
  * @type {String}
  * @private
@@ -249,12 +260,12 @@ EventBusClient.prototype.connectionHandler_ = function () {
 
     self.isConnected_ = true;
 
-    self.emit('serviceMessage', {
+    self.emit(EventBusClient.events.serviceMessage, {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
         message:self.tlsConfig_.enabled ? 'TLS/SSL connection established' : 'Connection established'
     });
 
-    self.emit('connected');
+    self.emit(EventBusClient.events.workerConnected);
 
     var messageToSend = self.messageQueue_;
     self.messageQueue_ = [];
@@ -278,7 +289,9 @@ EventBusClient.prototype.closeHandler_ = function () {
         self.connect();
     }, self.reconnectInterval_);
 
-    self.emit('serviceMessage', {
+    self.emit(EventBusClient.events.workerDisconnected);
+
+    self.emit(EventBusClient.events.serviceMessage, {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
         message:'Connection lost'
     });
@@ -309,8 +322,8 @@ EventBusClient.prototype.incomingMessageHandler_ = function (message) {
         throw e;
     }
 
-    self.emit('workerMessage', messageObject);
-    self.emit('serviceMessage', {
+    self.emit(EventBusClient.events.messageFromMaster, messageObject);
+    self.emit(EventBusClient.events.serviceMessage, {
         connection:util.format('%s->%s', self.serverAddressString_, self.socketAddressString_),
         message:util.format('Master sent message, type - %s', messageObject.type)
     });
@@ -335,7 +348,7 @@ EventBusClient.prototype.sendToMaster = function (messageObject) {
 
     self.socketNamespace_.write(message + '\r\n');
 
-    self.emit('serviceMessage', {
+    self.emit(EventBusClient.events.serviceMessage, {
         connection:util.format('%s->%s', self.socketAddressString_, self.serverAddressString_),
         message:util.format('Worker sent message, type - %s', messageObject.type)
     });

@@ -60,20 +60,22 @@ function Master(config) {
     self.workers_ = {};
     self.eventServices_ = {};
 
-    self.eventBusServer_.on('serviceMessage', function (messageObject) {
+    var eventBusServerEvents = neutrino.cluster.EventBusServer.events;
+
+    self.eventBusServer_.on(eventBusServerEvents.serviceMessage, function (messageObject) {
         neutrino.logger.trace(util.format('Connection: %s. %s', messageObject.connection, messageObject.message));
     });
 
-    self.eventBusServer_.on('masterMessage', function (messageObject, workerId) {
+    self.eventBusServer_.on(eventBusServerEvents.messageFromWorker, function (messageObject, workerId) {
         self.messageHandler_(messageObject, workerId);
     });
 
-    self.eventBusServer_.on('workerConnected', function (workerId) {
+    self.eventBusServer_.on(eventBusServerEvents.workerConnected, function (workerId) {
         self.balancer_.addWorker(workerId);
         self.workers_[workerId] = {};
     });
 
-    self.eventBusServer_.on('workerDisconnected', function (workerId) {
+    self.eventBusServer_.on(eventBusServerEvents.workerDisconnected, function (workerId) {
         self.balancer_.removeWorker(workerId);
         delete self.workers_[workerId];
     });
@@ -81,6 +83,14 @@ function Master(config) {
     self.initEventServices_();
     self.createClientScript_();
 }
+
+/**
+ * Enum of master events.
+ * @enum {String}
+ */
+Master.events = {
+    eventServiceData:'eventServiceData'
+};
 
 /**
  * Current config object.
@@ -298,10 +308,10 @@ Master.prototype.initEventServices_ = function () {
 
             neutrino.logger.trace(util.format('Event service "%s" loaded', servicePath));
 
-            service.on('data', function (modelName, data) {
+            service.on(Master.events.eventServiceData, function (modelName, data) {
                 self.eventBusServer_.sendToWorker({
                     sender:serviceName,
-                    type:'data',
+                    type:neutrino.cluster.messageTypes.data,
                     value:{modelName:modelName, data:data}
                 }, self.balancer_.getWorker());
             });

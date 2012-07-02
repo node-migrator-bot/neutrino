@@ -13,7 +13,7 @@ function TestService() {
 
     self.timeout = setTimeout(function () {
 
-        self.emit('data', 'test', {
+        self.emit(neutrino.cluster.Master.events.eventServiceData, 'test', {
 
             message:'testMessage'
 

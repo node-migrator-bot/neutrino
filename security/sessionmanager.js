@@ -49,16 +49,17 @@ function SessionManager(config) {
     self.checkExpiredInterval_ = sessionConfig.checkExpiredInterval || self.checkExpiredInterval_;
 
     self.dbProvider_ = new neutrino.io.DbProvider(config);
-    self.dbProvider_.on('error', function (error) {
-        self.emit('error', error);
+    var dbProviderEvents = neutrino.io.DbProvider.events;
+    self.dbProvider_.on(dbProviderEvents.error, function (error) {
+        self.emit(SessionManager.events.error, error);
     });
 
     self.dbProvider_.getCollection(self.collectionName_, function (collection) {
         self.storage_ = collection;
-        self.emit('storageReady');
+        self.emit(SessionManager.events.storageReady);
     });
 
-    self.on('storageReady', function () {
+    self.on(SessionManager.events.storageReady, function () {
         self.isStorageReady_ = true;
     });
 
@@ -66,6 +67,15 @@ function SessionManager(config) {
         self.checkExpired();
     }, self.checkExpiredInterval_);
 }
+
+/**
+ * Enum of session manager events.
+ * @enum {String}
+ */
+SessionManager.events = {
+    storageReady:'storageReady',
+    error:'error'
+};
 
 /**
  * Is session storage ready.
@@ -132,7 +142,7 @@ SessionManager.prototype.create = function (sessionObject, callback) {
             self.storage_.insert(sessionObject, {safe:true}, function (error, objects) {
 
                 if (error) {
-                    self.emit('error', error);
+                    self.emit(SessionManager.events.error, error);
                 }
 
                 var object = objects[0];
@@ -145,7 +155,7 @@ SessionManager.prototype.create = function (sessionObject, callback) {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(SessionManager.events.storageReady, execute);
     }
 };
 
@@ -162,7 +172,7 @@ SessionManager.prototype.remove = function (sessionId, callback) {
             self.storage_.remove({sid:sessionId}, {safe:true}, function (error) {
 
                 if (error) {
-                    self.emit('error', error);
+                    self.emit(SessionManager.events.error, error);
                 }
 
                 callback(error);
@@ -173,7 +183,7 @@ SessionManager.prototype.remove = function (sessionId, callback) {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(SessionManager.events.storageReady, execute);
     }
 };
 
@@ -190,7 +200,7 @@ SessionManager.prototype.get = function (sessionId, callback) {
             self.storage_.findOne({sid:sessionId}, function (error, object) {
 
                 if (error) {
-                    self.emit('error', error);
+                    self.emit(SessionManager.events.error, error);
                 }
 
                 callback(error, object);
@@ -201,7 +211,7 @@ SessionManager.prototype.get = function (sessionId, callback) {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(SessionManager.events.storageReady, execute);
     }
 };
 
@@ -226,7 +236,7 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
                 function (error, object) {
 
                     if (error) {
-                        self.emit('error', error);
+                        self.emit(SessionManager.events.error, error);
                     }
 
                     callback(error, object);
@@ -238,7 +248,7 @@ SessionManager.prototype.set = function (sessionId, setParameters, callback) {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(SessionManager.events.storageReady, execute);
     }
 };
 
@@ -273,7 +283,7 @@ SessionManager.prototype.checkExpired = function () {
     if (self.isStorageReady_) {
         execute();
     } else {
-        self.once('storageReady', execute);
+        self.once(SessionManager.events.storageReady, execute);
     }
 
 };
@@ -296,7 +306,7 @@ SessionManager.prototype.createSessionId = function () {
         uniqueKey = util.format('%d:%d:%d', now.getTime(), Math.random(), Math.random()),
         hash = crypto.createHash('sha512');
 
-    hash.update(uniqueKey, "utf8");
+    hash.update(uniqueKey, 'utf8');
     return hash.digest('hex');
 
 };
