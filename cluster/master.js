@@ -230,16 +230,17 @@ Master.prototype.addressHandler_ = function (messageObject, workerId) {
 
 //noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 /**
- * Handle workers sync message.
+ * Handle workers sync and shared messages.
  * @param {Object} messageObject Incoming message object.
  * @private
  */
-Master.prototype.syncHandler_ = function (messageObject) {
+Master.prototype.sharedHandler_ =
+    Master.prototype.syncHandler_ = function (messageObject) {
 
-    var self = this;
-    self.eventBusServer_.sendToWorker(messageObject);
+        var self = this;
+        self.eventBusServer_.sendToWorker(messageObject);
 
-};
+    };
 
 //noinspection JSUnusedGlobalSymbols
 /**

@@ -86,7 +86,8 @@ function Worker(config) {
  * @enum {String}
  */
 Worker.events = {
-    messageForModels:'messageForModels'
+    messageForModels:'messageForModels',
+    sharedMessage:'sharedMessage'
 };
 
 /**
@@ -222,7 +223,27 @@ Worker.prototype.messageHandler_ = function (messageObject) {
 
     var self = this;
 
+    if (messageObject.type === neutrino.cluster.messageTypes.shared) {
+        self.emit(Worker.events.sharedMessage, messageObject.value);
+        return;
+    }
+
     self.emit(Worker.events.messageForModels, messageObject.type, messageObject.sender, messageObject.value);
+};
+
+/**
+ * Send data message to all nodes.
+ * @param {Object} message Shared data.
+ */
+Worker.prototype.sendSharedMessage = function (message) {
+
+    var self = this;
+
+    self.eventBusClient_.sendToMaster({
+        type:neutrino.cluster.messageTypes.shared,
+        sender:self.id,
+        value:message
+    });
 };
 
 /**

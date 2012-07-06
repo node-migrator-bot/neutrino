@@ -46,9 +46,9 @@ Model example
 
 	util.inherits(TestModel, neutrino.mvc.ModelBase);
 	
-	function TestModel(config, modelFileName) {
-	
-	    neutrino.mvc.ModelBase.call(this, config, modelFileName, {
+	function TestModel(config, modelName) {
+	    // model name will be used for model state saving in database, by default it's a filename
+	    neutrino.mvc.ModelBase.call(this, config, modelName, {
 	        testProperty1:'testValue1',
 			testProperty2:'testValue2',
 			_testPrivateProperty1:'testPrivateValue1',
@@ -74,6 +74,10 @@ Model example
 	TestModel.prototype.sendToEventServiceExample = function (serviceName, dataObject) {
 	    this.emit(modelEvents.sentToService, serviceName, dataObject);
 	};
+
+	TestModel.prototype.sendNotificationToUser = function (sessionId, dataObject) {
+        this.emit(modelEvents.notify, sessionId, dataObject);
+    };
 
 Controller example
 
@@ -159,7 +163,11 @@ Client-side usage example
 					client.on('disconnect',function(){
 						alert('disconnected');
 					});
-					
+
+					client.on('notification',function(viewName, notificationObject){
+					    alert('received notification from ' + viewName);
+					});
+
 					client.subscribe('testModelFileName',
 						function(propertyName,oldValue,newValue){
 							console.log('testModelFileName changed:'+propertyName+' '+oldValue+'->'+newValue);

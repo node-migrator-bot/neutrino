@@ -91,6 +91,10 @@ function ControllerBase(config, name, model, view) {
         self.modelUpdateHandler(propertyName, oldValue, newValue);
     });
 
+    self.model_.on(modelEvents.notify, function (sessionId, notificationObject) {
+        self.view_.showNotification(sessionId, notificationObject);
+    });
+
     self.model_.on(modelEvents.error, function (error) {
         self.emit(ControllerBase.events.error, error);
     });

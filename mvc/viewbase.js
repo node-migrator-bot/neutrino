@@ -59,6 +59,7 @@ function ViewBase(config, name) {
  */
 ViewBase.events = {
     showResponse:'showResponse',
+    showNotification:'showNotification',
     updateValue:'updateValue',
     setValue:'setValue',
     modelRequest:'modelRequest',
@@ -83,6 +84,18 @@ ViewBase.prototype.showResponse = function (response, sessionId, requestId) {
 
     var self = this;
     self.emit(ViewBase.events.showResponse, response, sessionId, requestId);
+
+};
+
+/**
+ * Show user-specified notification.
+ * @param {String} sessionId User session ID.
+ * @param {Object} notificationObject User notification.
+ */
+ViewBase.prototype.showNotification = function (sessionId, notificationObject) {
+
+    var self = this;
+    self.emit(ViewBase.events.showNotification, sessionId, notificationObject);
 
 };
 

@@ -90,7 +90,8 @@ ModelBase.events = {
     error:'error',
     storageReady:'storageReady',
     syncRequired:'syncRequired',
-    sentToService:'sentToService'
+    sentToService:'sentToService',
+    notify:'notify'
 };
 
 /**

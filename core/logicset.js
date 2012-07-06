@@ -78,6 +78,22 @@ function LogicSet(config, worker) {
         self.messageForModelsHandler_(type, sender, value);
     });
 
+    self.worker_.on(neutrino.cluster.Worker.events.sharedMessage, function (messageObject) {
+        if (!messageObject || !messageObject.viewName || !messageObject.sessionId) {
+            return;
+        }
+        self.viewHub_.sendNotification(messageObject.viewName, messageObject.sessionId,
+            messageObject.data, true);
+    });
+
+    self.viewHub_.on(viewHubEvents.routeNotification, function (viewName, sessionId, notificationObject) {
+        self.worker_.sendSharedMessage({
+            sessionId:sessionId,
+            data:notificationObject,
+            viewName:viewName
+        });
+    });
+
     self.initModels_();
 }
 
@@ -203,6 +219,10 @@ LogicSet.prototype.linkView_ = function (viewName) {
 
     view.on(viewEvents.showResponse, function (response, sessionId, requestId) {
         self.viewHub_.sendResponse(viewName, response, sessionId, requestId);
+    });
+
+    view.on(viewEvents.showNotification, function (sessionId, notificationObject) {
+        self.viewHub_.sendNotification(viewName, sessionId, notificationObject);
     });
 
     self.viewHub_.on(viewHubEvents.modelRequest, function (requestViewName, sessionId, requestId) {

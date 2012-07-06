@@ -288,15 +288,15 @@ neutrino.exports = exports;
         self.setMaxListeners(0);
 
         self.masterUrl = masterUrl;
-        self.ajax_ = new AjaxProvider();
-        self.subscriptions_ = {};
-        self.cookieProvider_ = new CookieProvider();
+        self.ajaxProvider_ = new neutrino.AjaxProvider();
+        self.changeSubscriptions_ = {};
+        self.cookieProvider_ = new neutrino.CookieProvider();
         self.on(ViewHubClient.events.socketReady, function () {
             self.isSocketReady_ = true;
         });
 
         self.sessionId = self.cookieProvider_.getCookie('sid');
-        self.connect_(masterUrl);
+        self.connect_();
 
     }
 
@@ -306,6 +306,7 @@ neutrino.exports = exports;
      */
     ViewHubClient.events = {
         newValue:'newValue',
+        notification:'notification',
         modelResponse:'modelResponse',
         invokeResponse:'invokeResponse',
         editResponse:'editResponse',
@@ -333,7 +334,7 @@ neutrino.exports = exports;
      * @type {AjaxProvider}
      * @private
      */
-    ViewHubClient.prototype.ajax_ = null;
+    ViewHubClient.prototype.ajaxProvider_ = null;
 
     /**
      * Current master URL.
@@ -347,13 +348,6 @@ neutrino.exports = exports;
      * @private
      */
     ViewHubClient.prototype.isSocketReady_ = false;
-
-    /**
-     * Current instance of event emitter.
-     * @type {EventEmitter}
-     * @private
-     */
-    ViewHubClient.prototype.eventEmitter_ = null;
 
     /**
      * Generate new request ID.
@@ -372,11 +366,11 @@ neutrino.exports = exports;
     ViewHubClient.prototype.cookieProvider_ = null;
 
     /**
-     * Client subscriptions collection.
+     * Client change subscriptions collection.
      * @type {Object}
      * @private
      */
-    ViewHubClient.prototype.subscriptions_ = null;
+    ViewHubClient.prototype.changeSubscriptions_ = null;
 
     /**
      * Current socket instance.
@@ -393,7 +387,7 @@ neutrino.exports = exports;
 
         var self = this;
 
-        self.ajax_.requestJson(self.masterUrl + '/getWorker', function (error, result) {
+        self.ajaxProvider_.requestJson(self.masterUrl + '/getWorker', function (error, result) {
 
             if (error || !result || !result.host || !result.port) {
                 setTimeout(function () {
@@ -412,6 +406,10 @@ neutrino.exports = exports;
 
             self.socketNamespace_.on(ViewHubClient.events.newValue, function (viewName, propertyName, oldValue, newValue) {
                 self.newValueHandler_(viewName, propertyName, oldValue, newValue);
+            });
+
+            self.socketNamespace_.on(ViewHubClient.events.notification, function (viewName, notificationObject) {
+                self.emit(ViewHubClient.events.notification, viewName, notificationObject);
             });
 
             self.socketNamespace_.on(ViewHubClient.events.invokeResponse, function (response) {
@@ -603,11 +601,11 @@ neutrino.exports = exports;
                         return;
                     }
 
-                    if (!self.subscriptions_[viewName]) {
-                        self.subscriptions_[viewName] = [];
+                    if (!self.changeSubscriptions_[viewName]) {
+                        self.changeSubscriptions_[viewName] = [];
                     }
 
-                    self.subscriptions_[viewName].push(handler);
+                    self.changeSubscriptions_[viewName].push(handler);
                     callback && callback(null);
                 });
                 self.socketNamespace_.emit(ViewHubClient.requests.subscribeRequest, {viewName:viewName, sessionId:self.sessionId, id:requestId});
@@ -637,7 +635,7 @@ neutrino.exports = exports;
             return;
         }
 
-        if (!self.subscriptions_[viewName] || self.subscriptions_[viewName].length === 0) {
+        if (!self.changeSubscriptions_[viewName] || self.changeSubscriptions_[viewName].length === 0) {
             callback && callback(new Error('This view has no subscriptions yet'));
             return;
         }
@@ -647,8 +645,8 @@ neutrino.exports = exports;
                 self.once('response' + requestId, function (response) {
                     self.removeAllListeners('response' + requestId);
 
-                    var removeIndex = self.subscriptions_[viewName].indexOf(handler);
-                    self.subscriptions_.splice(removeIndex, 1);
+                    var removeIndex = self.changeSubscriptions_[viewName].indexOf(handler);
+                    self.changeSubscriptions_.splice(removeIndex, 1);
 
                     if (!response.success) {
                         callback && callback(new Error('Server declined unsubscribe message'));
@@ -687,8 +685,8 @@ neutrino.exports = exports;
 
         var self = this;
 
-        for (var viewName in self.subscriptions_) {
-            if (!self.subscriptions_.hasOwnProperty(viewName)) {
+        for (var viewName in self.changeSubscriptions_) {
+            if (!self.changeSubscriptions_.hasOwnProperty(viewName)) {
                 continue;
             }
             var requestId = self.generateRequestId_();
@@ -728,14 +726,16 @@ neutrino.exports = exports;
     ViewHubClient.prototype.newValueHandler_ = function (viewName, propertyName, oldValue, newValue) {
 
         var self = this;
-        if (!self.subscriptions_.hasOwnProperty(viewName)) {
+        if (!self.changeSubscriptions_.hasOwnProperty(viewName)) {
             return;
         }
 
-        self.subscriptions_[viewName].forEach(function (item) {
+        self.changeSubscriptions_[viewName].forEach(function (item) {
             item(propertyName, oldValue, newValue);
         });
     };
+
+    neutrino.CookieProvider = CookieProvider;
 
     /**
      * Create new instance of neutrino cookie provider.
@@ -797,6 +797,8 @@ neutrino.exports = exports;
         self.setCookie(name, null, new Date(0), path, domain);
         return true;
     };
+
+    neutrino.AjaxProvider = AjaxProvider;
 
     /**
      * Ajax implementation.

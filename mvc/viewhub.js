@@ -105,6 +105,8 @@ function ViewHub(config) {
  */
 ViewHub.events = {
     sendNewValue:'sendNewValue',
+    sendNotification:'sendNotification',
+    routeNotification:'routeNotification',
     clientConnected:'clientConnected',
     clientDisconnected:'clientDisconnected',
     modelRequest:'modelRequest',
@@ -121,6 +123,7 @@ ViewHub.events = {
  */
 ViewHub.clientEvents = {
     newValue:'newValue',
+    notification:'notification',
     modelResponse:'modelResponse',
     invokeResponse:'invokeResponse',
     editResponse:'editResponse',
@@ -166,6 +169,20 @@ ViewHub.prototype.sendResponse = function (viewName, responseObject, sessionId, 
             responseBody:responseObject
         };
     self.emit('response' + requestId, response);
+
+};
+
+/**
+ * Send notification to client.
+ * @param {String} viewName Name of view.
+ * @param {String} sessionId User session ID.
+ * @param {Object} notificationObject User notification.
+ * @param {Boolean} isRouted Is this message routed from another node.
+ */
+ViewHub.prototype.sendNotification = function (viewName, sessionId, notificationObject, isRouted) {
+
+    var self = this;
+    self.emit(ViewHub.events.sendNotification, viewName, sessionId, notificationObject, isRouted);
 
 };
 
@@ -277,6 +294,19 @@ ViewHub.prototype.newConnectionHandler_ = function (socket) {
         if (socket.sessionIds && socket.sessionIds.hasOwnProperty(sessionId)) {
             socket.emit(ViewHub.clientEvents.newValue, viewName, propertyName, oldValue, newValue);
         }
+    });
+
+    self.on(ViewHub.events.sendNotification, function (viewName, sessionId, notificationObject, isRouted) {
+        if (socket.sessionIds && socket.sessionIds.hasOwnProperty(sessionId)) {
+            socket.emit(ViewHub.clientEvents.notification, viewName, notificationObject);
+            return;
+        }
+
+        if (isRouted) {
+            return;
+        }
+
+        self.emit(ViewHub.events.routeNotification, viewName, sessionId, notificationObject);
     });
 
     self.emit(ViewHub.events.clientConnected, socketAddress);

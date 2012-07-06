@@ -52,6 +52,7 @@ neutrino.cluster = {};
 neutrino.cluster.messageTypes = {
     data:'data',
     sync:'sync',
+    shared:'shared',
     load:'load',
     address:'address'
 };
