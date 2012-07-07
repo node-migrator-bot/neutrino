@@ -55,7 +55,7 @@ function Config(config) {
     // else it's empty object
     if (config && typeof(config) === 'string') {
 
-        var existsPredicate = fs.existsSync || path.existsSync;
+        var existsPredicate = fs.existsSync || fs.existsSync;
         if (!existsPredicate(config)) {
 
             throw new Error('Config "' + config + '" not found!');
