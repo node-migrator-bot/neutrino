@@ -41,7 +41,7 @@ module.exports = Logger;
 var util = require('util'),
     path = require('path'),
     fs = require('fs'),
-    existsPredicate = fs.exists || path.exists;
+    existsPredicate = fs.exists || fs.exists;
 
 /**
  * Create new instance of neutrino logger.
